@@ -14,8 +14,6 @@ import { exportRoadmapPDF } from '../utils/exportUtils';
 import confetti from 'canvas-confetti';
 import { playTaskCompleteSound, playClickSound, playLevelUpSound } from '../utils/soundFX';
 import HoloCard from '../components/HoloCard';
-import ProjectPortalModal from '../components/ProjectPortalModal';
-import AssessmentQuizModal from '../components/AssessmentQuizModal';
 import { generatePhaseAssessment, generateReadinessAssessment } from '../utils/assessmentGenerator';
 import { getCareerProjects } from '../utils/domainProjects';
 
@@ -30,6 +28,7 @@ export default function RoadmapView() {
     soundEnabled,
     deleteCareer, setActiveView, restoreDefaultCareers,
     phaseAssessments, readinessAssessments, projectProgress,
+    openQuizAssessment, openProjectPortal,
   } = useStore();
 
   const [expandedPhase, setExpandedPhase] = useState(0);
@@ -41,8 +40,6 @@ export default function RoadmapView() {
   const [newPhaseTitle, setNewPhaseTitle] = useState('');
   const [newPhaseDesc, setNewPhaseDesc] = useState('');
   const [taskInputs, setTaskInputs] = useState({}); // { [phaseIdx]: { title: '', hours: 15 } }
-  const [activeAssessment, setActiveAssessment] = useState(null);
-  const [selectedProject, setSelectedProject] = useState(null);
 
   const allCareers = getAllCareers();
   const career = selectedCareer || (activeRoadmap ? allCareers.find((c) => c.id === activeRoadmap.careerId) : null) || allCareers[0];
@@ -50,12 +47,12 @@ export default function RoadmapView() {
 
   const handleStartPhaseAssessment = (phaseIdx, phaseData) => {
     const assess = generatePhaseAssessment(career, phaseIdx, phaseData);
-    setActiveAssessment(assess);
+    openQuizAssessment(assess);
   };
 
   const handleStartReadinessAssessment = () => {
     const assess = generateReadinessAssessment(career);
-    setActiveAssessment(assess);
+    openQuizAssessment(assess);
   };
 
   useEffect(() => {
@@ -931,7 +928,7 @@ export default function RoadmapView() {
                     <HoloCard
                       key={proj.id}
                       glowColor={pIdx % 2 === 0 ? '#7c3aed' : '#ec4899'}
-                      onClick={() => setSelectedProject(proj)}
+                      onClick={() => openProjectPortal(proj, career)}
                       style={{ padding: 22, cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
                     >
                       <div>
@@ -1056,27 +1053,6 @@ export default function RoadmapView() {
           </motion.div>
         )}
       </div>
-
-      {/* Gamified Assessment Quiz Modal (30 MCQs) */}
-      <AnimatePresence>
-        {activeAssessment && (
-          <AssessmentQuizModal
-            assessment={activeAssessment}
-            onClose={() => setActiveAssessment(null)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Interactive Project Portal Modal */}
-      <AnimatePresence>
-        {selectedProject && (
-          <ProjectPortalModal
-            project={selectedProject}
-            career={career}
-            onClose={() => setSelectedProject(null)}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }

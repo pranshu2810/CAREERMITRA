@@ -14,7 +14,340 @@
     "targetMonths": 6,
     "xp": 450,
     "level": 3,
+    "progress": {},
+    "activityHistory": [],
+    "phaseAssessments": {},
+    "readinessAssessments": {},
+    "projectProgress": {},
     "savedRoadmaps": [],
+    "notes": {},
+    "badges": [
+      "first_milestone",
+      "explorer",
+      "ai_oracle"
+    ],
+    "customCareers": [],
+    "streakDays": 4,
     "createdAt": "2026-10-10T00:00:00.000Z"
+  },
+  {
+    "id": "user-1791635345493-1snivy",
+    "name": "PRANSHU",
+    "email": "pranshugupta2810@gmail.com",
+    "passwordHash": "$2b$10$93jjOg26Lptpg0qdiYQQNeTQ2WzJTViv9gzebetHLJNW1b3ATvlre",
+    "targetRole": "ai-engineer",
+    "skills": [],
+    "weeklyHours": 15,
+    "targetMonths": 6,
+    "xp": 100,
+    "level": 1,
+    "progress": {
+      "swe": {
+        "0": {
+          "0": true,
+          "2": true
+        }
+      }
+    },
+    "activityHistory": [
+      {
+        "id": "act-1791635449511-z7pn",
+        "careerId": "swe",
+        "phaseIndex": 0,
+        "taskIndex": 2,
+        "taskTitle": "Version Control with Git",
+        "timestamp": "2026-10-10T12:30:49.511Z"
+      },
+      {
+        "id": "act-1791635448818-6zsx",
+        "careerId": "swe",
+        "phaseIndex": 0,
+        "taskIndex": 0,
+        "taskTitle": "DSA Mastery",
+        "timestamp": "2026-10-10T12:30:48.818Z"
+      }
+    ],
+    "phaseAssessments": {},
+    "readinessAssessments": {},
+    "projectProgress": {},
+    "savedRoadmaps": [
+      {
+        "careerId": "swe",
+        "careerTitle": "Software Engineer",
+        "generatedAt": "2026-10-10T12:29:19.890Z",
+        "userProfile": {
+          "name": "PRANSHU",
+          "email": "pranshugupta2810@gmail.com",
+          "goalCareer": "ai-engineer",
+          "skills": [],
+          "timelineMonths": 6,
+          "hoursPerWeek": 15
+        },
+        "timelineMonths": 6,
+        "skillMatch": 28,
+        "aiSummary": "Welcome, PRANSHU! Your personalized roadmap to becoming a professional **Software Engineer** is ready. You bring a fresh perspective with 28% skill alignment. In 6 months, you'll progress through 4 structured phases — from core fundamentals to industry-ready mastery. The Engineering domain is seeing +22% annual growth, with compensation ranging around ₹18–45 LPA. Stay consistent with 15–20 hours/week and you'll achieve milestone mastery right on schedule.",
+        "phases": [
+          {
+            "phase": "Foundation",
+            "duration": "1 month",
+            "tasks": [
+              {
+                "title": "DSA Mastery",
+                "priority": "learn",
+                "estimatedHours": 20,
+                "completed": false
+              },
+              {
+                "title": "OOP Concepts",
+                "priority": "learn",
+                "estimatedHours": 20,
+                "completed": false
+              },
+              {
+                "title": "Version Control with Git",
+                "priority": "learn",
+                "estimatedHours": 20,
+                "completed": false
+              },
+              {
+                "title": "Basic Linux/CLI",
+                "priority": "learn",
+                "estimatedHours": 20,
+                "completed": false
+              }
+            ],
+            "id": "phase-0",
+            "status": "pending",
+            "resources": [
+              {
+                "title": "LeetCode DSA Track",
+                "type": "Practice",
+                "url": "https://leetcode.com"
+              }
+            ]
+          },
+          {
+            "phase": "Core Skills",
+            "duration": "1 month",
+            "tasks": [
+              {
+                "title": "Choose Stack (React/Node or Python/Django)",
+                "priority": "learn",
+                "estimatedHours": 20,
+                "completed": false
+              },
+              {
+                "title": "Databases (SQL + NoSQL)",
+                "priority": "learn",
+                "estimatedHours": 20,
+                "completed": false
+              },
+              {
+                "title": "REST API Design",
+                "priority": "learn",
+                "estimatedHours": 20,
+                "completed": false
+              },
+              {
+                "title": "Testing Fundamentals",
+                "priority": "learn",
+                "estimatedHours": 20,
+                "completed": false
+              }
+            ],
+            "id": "phase-1",
+            "status": "pending",
+            "resources": [
+              {
+                "title": "CS50 Harvard",
+                "type": "Course",
+                "url": "https://cs50.harvard.edu"
+              }
+            ]
+          },
+          {
+            "phase": "Advanced",
+            "duration": "2 months",
+            "tasks": [
+              {
+                "title": "System Design",
+                "priority": "learn",
+                "estimatedHours": 20,
+                "completed": false
+              },
+              {
+                "title": "Cloud Deployment (AWS/GCP)",
+                "priority": "learn",
+                "estimatedHours": 20,
+                "completed": false
+              },
+              {
+                "title": "Microservices",
+                "priority": "learn",
+                "estimatedHours": 20,
+                "completed": false
+              },
+              {
+                "title": "DevOps Basics",
+                "priority": "learn",
+                "estimatedHours": 20,
+                "completed": false
+              }
+            ],
+            "id": "phase-2",
+            "status": "pending",
+            "resources": [
+              {
+                "title": "System Design Primer",
+                "type": "GitHub",
+                "url": "https://github.com/donnemartin/system-design-primer"
+              }
+            ]
+          },
+          {
+            "phase": "Industry Ready",
+            "duration": "2 months",
+            "tasks": [
+              {
+                "title": "Portfolio Projects (3+)",
+                "priority": "learn",
+                "estimatedHours": 20,
+                "completed": false
+              },
+              {
+                "title": "Open Source Contributions",
+                "priority": "learn",
+                "estimatedHours": 20,
+                "completed": false
+              },
+              {
+                "title": "Mock Interviews",
+                "priority": "learn",
+                "estimatedHours": 20,
+                "completed": false
+              },
+              {
+                "title": "Resume & LinkedIn",
+                "priority": "learn",
+                "estimatedHours": 20,
+                "completed": false
+              }
+            ],
+            "id": "phase-3",
+            "status": "pending",
+            "resources": [
+              {
+                "title": "LeetCode DSA Track",
+                "type": "Practice",
+                "url": "https://leetcode.com"
+              },
+              {
+                "title": "CS50 Harvard",
+                "type": "Course",
+                "url": "https://cs50.harvard.edu"
+              }
+            ]
+          }
+        ],
+        "recommendations": [
+          "🌱 Master Phase 1 fundamentals thoroughly before advancing to studio/applied work.",
+          "⏱️ Dedicate at least 2 structured hours daily for steady craft compounding.",
+          "📚 Top recommended resource: LeetCode DSA Track",
+          "📊 Keep a weekly practice log to track hours and maintain consistency."
+        ],
+        "alternativePaths": [
+          {
+            "id": "data-scientist",
+            "title": "Data Scientist",
+            "icon": "📊",
+            "reason": "Shared skills with Software Engineer"
+          },
+          {
+            "id": "devops",
+            "title": "DevOps Engineer",
+            "icon": "⚙️",
+            "reason": "Shared skills with Software Engineer"
+          }
+        ],
+        "weeklyPlan": [
+          {
+            "phaseIndex": 0,
+            "phase": "Foundation",
+            "startWeek": 1,
+            "endWeek": 6,
+            "hoursPerWeek": 18,
+            "focus": "DSA Mastery, OOP Concepts"
+          },
+          {
+            "phaseIndex": 1,
+            "phase": "Core Skills",
+            "startWeek": 7,
+            "endWeek": 12,
+            "hoursPerWeek": 18,
+            "focus": "Choose Stack (React/Node or Python/Django), Databases (SQL + NoSQL)"
+          },
+          {
+            "phaseIndex": 2,
+            "phase": "Advanced",
+            "startWeek": 13,
+            "endWeek": 18,
+            "hoursPerWeek": 18,
+            "focus": "System Design, Cloud Deployment (AWS/GCP)"
+          },
+          {
+            "phaseIndex": 3,
+            "phase": "Industry Ready",
+            "startWeek": 19,
+            "endWeek": 24,
+            "hoursPerWeek": 18,
+            "focus": "Portfolio Projects (3+), Open Source Contributions"
+          }
+        ]
+      }
+    ],
+    "notes": {},
+    "badges": [
+      "first_milestone",
+      "explorer",
+      "ai_oracle"
+    ],
+    "customCareers": [],
+    "streakDays": 1,
+    "createdAt": "2026-10-10T12:29:05.493Z",
+    "userProfile": {
+      "name": "PRANSHU",
+      "email": "pranshugupta2810@gmail.com",
+      "goalCareer": "ai-engineer",
+      "skills": [],
+      "timelineMonths": 6,
+      "hoursPerWeek": 15
+    }
+  },
+  {
+    "id": "user-1791635478216-g8y97d",
+    "name": "PRANSHU",
+    "email": "pranshugupta@gmail.com",
+    "passwordHash": "$2b$10$Zhnd4pfHv5fBB.7fZpi8JeFjsUOnhE3Hx.0AkAozJVXH.YbWJvE6i",
+    "targetRole": "mlops",
+    "skills": [],
+    "weeklyHours": 15,
+    "targetMonths": 6,
+    "xp": 100,
+    "level": 1,
+    "progress": {},
+    "activityHistory": [],
+    "phaseAssessments": {},
+    "readinessAssessments": {},
+    "projectProgress": {},
+    "savedRoadmaps": [],
+    "notes": {},
+    "badges": [
+      "first_milestone",
+      "explorer",
+      "ai_oracle"
+    ],
+    "customCareers": [],
+    "streakDays": 1,
+    "createdAt": "2026-10-10T12:31:18.216Z"
   }
 ]

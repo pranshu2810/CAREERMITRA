@@ -37,7 +37,16 @@ const DEFAULT_DEMO_USER = {
   targetMonths: 6,
   xp: 450,
   level: 3,
+  progress: {},
+  activityHistory: [],
+  phaseAssessments: {},
+  readinessAssessments: {},
+  projectProgress: {},
   savedRoadmaps: [],
+  notes: {},
+  badges: ['first_milestone', 'explorer', 'ai_oracle'],
+  customCareers: [],
+  streakDays: 4,
   createdAt: '2026-10-10T00:00:00.000Z'
 };
 
@@ -93,7 +102,21 @@ function saveUsers(users) {
 function sanitizeUser(user) {
   if (!user) return null;
   const { passwordHash, ...safeUser } = user;
-  return safeUser;
+  return {
+    progress: {},
+    activityHistory: [],
+    phaseAssessments: {},
+    readinessAssessments: {},
+    projectProgress: {},
+    savedRoadmaps: [],
+    notes: {},
+    badges: ['first_milestone', 'explorer', 'ai_oracle'],
+    customCareers: [],
+    streakDays: 1,
+    xp: 100,
+    level: 1,
+    ...safeUser
+  };
 }
 
 function generateToken(user) {
@@ -144,7 +167,16 @@ app.post('/api/auth/register', async (req, res) => {
       targetMonths: 6,
       xp: 100,
       level: 1,
+      progress: {},
+      activityHistory: [],
+      phaseAssessments: {},
+      readinessAssessments: {},
+      projectProgress: {},
       savedRoadmaps: [],
+      notes: {},
+      badges: ['first_milestone', 'explorer', 'ai_oracle'],
+      customCareers: [],
+      streakDays: 1,
       createdAt: new Date().toISOString()
     };
 
@@ -259,10 +291,18 @@ app.put('/api/auth/profile', authMiddleware, (req, res) => {
     const users = getUsers();
     const index = users.findIndex(u => u.id === req.user.id);
     if (index === -1) {
+      if (req.user.id && req.user.id.startsWith('guest-')) {
+        return res.json({ success: true, message: 'Guest session in-memory update' });
+      }
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const { name, targetRole, skills, weeklyHours, targetMonths, xp, level } = req.body;
+    const {
+      name, targetRole, skills, weeklyHours, targetMonths, xp, level,
+      progress, activityHistory, phaseAssessments, readinessAssessments,
+      projectProgress, savedRoadmaps, notes, badges, customCareers, streakDays, userProfile
+    } = req.body;
+
     if (name) users[index].name = name;
     if (targetRole) users[index].targetRole = targetRole;
     if (Array.isArray(skills)) users[index].skills = skills;
@@ -270,12 +310,67 @@ app.put('/api/auth/profile', authMiddleware, (req, res) => {
     if (targetMonths !== undefined) users[index].targetMonths = Number(targetMonths);
     if (xp !== undefined) users[index].xp = Number(xp);
     if (level !== undefined) users[index].level = Number(level);
+    if (progress !== undefined) users[index].progress = progress;
+    if (activityHistory !== undefined) users[index].activityHistory = activityHistory;
+    if (phaseAssessments !== undefined) users[index].phaseAssessments = phaseAssessments;
+    if (readinessAssessments !== undefined) users[index].readinessAssessments = readinessAssessments;
+    if (projectProgress !== undefined) users[index].projectProgress = projectProgress;
+    if (savedRoadmaps !== undefined) users[index].savedRoadmaps = savedRoadmaps;
+    if (notes !== undefined) users[index].notes = notes;
+    if (badges !== undefined) users[index].badges = badges;
+    if (customCareers !== undefined) users[index].customCareers = customCareers;
+    if (streakDays !== undefined) users[index].streakDays = Number(streakDays);
+    if (userProfile !== undefined) users[index].userProfile = userProfile;
 
     saveUsers(users);
     res.json({ success: true, user: sanitizeUser(users[index]), message: 'Profile updated' });
   } catch (error) {
     console.error('Profile update error:', error);
     res.status(500).json({ success: false, message: 'Failed to update profile' });
+  }
+});
+
+// Dedicated Account Progress Sync Endpoint
+app.post('/api/user/sync', authMiddleware, (req, res) => {
+  try {
+    const users = getUsers();
+    const index = users.findIndex(u => u.id === req.user.id);
+    if (index === -1) {
+      if (req.user.id && req.user.id.startsWith('guest-')) {
+        return res.json({ success: true, message: 'Guest session in-memory update' });
+      }
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const {
+      progress, activityHistory, phaseAssessments, readinessAssessments,
+      projectProgress, savedRoadmaps, notes, badges, customCareers,
+      streakDays, xp, level, userProfile, targetRole, skills, weeklyHours, targetMonths
+    } = req.body;
+
+    if (progress !== undefined) users[index].progress = progress;
+    if (activityHistory !== undefined) users[index].activityHistory = activityHistory;
+    if (phaseAssessments !== undefined) users[index].phaseAssessments = phaseAssessments;
+    if (readinessAssessments !== undefined) users[index].readinessAssessments = readinessAssessments;
+    if (projectProgress !== undefined) users[index].projectProgress = projectProgress;
+    if (savedRoadmaps !== undefined) users[index].savedRoadmaps = savedRoadmaps;
+    if (notes !== undefined) users[index].notes = notes;
+    if (badges !== undefined) users[index].badges = badges;
+    if (customCareers !== undefined) users[index].customCareers = customCareers;
+    if (streakDays !== undefined) users[index].streakDays = Number(streakDays);
+    if (xp !== undefined) users[index].xp = Number(xp);
+    if (level !== undefined) users[index].level = Number(level);
+    if (userProfile !== undefined) users[index].userProfile = userProfile;
+    if (targetRole !== undefined) users[index].targetRole = targetRole;
+    if (skills !== undefined) users[index].skills = skills;
+    if (weeklyHours !== undefined) users[index].weeklyHours = Number(weeklyHours);
+    if (targetMonths !== undefined) users[index].targetMonths = Number(targetMonths);
+
+    saveUsers(users);
+    res.json({ success: true, user: sanitizeUser(users[index]), message: 'Account state synced' });
+  } catch (error) {
+    console.error('Sync error:', error);
+    res.status(500).json({ success: false, message: 'Failed to sync account state' });
   }
 });
 

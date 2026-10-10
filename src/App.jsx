@@ -9,11 +9,13 @@ import GamificationHUD from './components/GamificationHUD';
 import useStore from './store/useStore';
 
 // Lazy-load views
-const LandingView  = lazy(() => import('./pages/LandingView'));
-const RoadmapView  = lazy(() => import('./pages/RoadmapView'));
-const CompareView  = lazy(() => import('./pages/CompareView'));
-const ProfileView  = lazy(() => import('./pages/ProfileView'));
-const ProgressView = lazy(() => import('./pages/ProgressView'));
+const LandingView        = lazy(() => import('./pages/LandingView'));
+const RoadmapView        = lazy(() => import('./pages/RoadmapView'));
+const CompareView        = lazy(() => import('./pages/CompareView'));
+const ProfileView        = lazy(() => import('./pages/ProfileView'));
+const ProgressView       = lazy(() => import('./pages/ProgressView'));
+const QuizAssessmentView = lazy(() => import('./pages/QuizAssessmentView'));
+const ProjectPortalView  = lazy(() => import('./pages/ProjectPortalView'));
 
 function PageLoader() {
   return (
@@ -31,10 +33,18 @@ const VIEW_COMPONENTS = {
   compare:  <Suspense fallback={<PageLoader />}><CompareView /></Suspense>,
   profile:  <Suspense fallback={<PageLoader />}><ProfileView /></Suspense>,
   progress: <Suspense fallback={<PageLoader />}><ProgressView /></Suspense>,
+  quiz:     <Suspense fallback={<PageLoader />}><QuizAssessmentView /></Suspense>,
+  projects: <Suspense fallback={<PageLoader />}><ProjectPortalView /></Suspense>,
 };
 
 export default function App() {
-  const { activeView } = useStore();
+  const { activeView, initAuthSession } = useStore();
+
+  React.useEffect(() => {
+    if (initAuthSession) {
+      initAuthSession();
+    }
+  }, []);
 
   return (
     <>

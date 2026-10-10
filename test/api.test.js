@@ -120,6 +120,53 @@ async function runTests() {
     assert(me.status === 200, '/api/auth/me responds with 200 OK');
     assert(me.data.user.email === testEmail, 'User profile matches registered email');
 
+    // 9. Account Isolation Verification
+    console.log('\n[Test 9] User A Progress Sync');
+    const syncA = await request('/api/user/sync', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${reg.data.token}`
+      },
+      body: JSON.stringify({
+        progress: { 'ai-engineer': { 0: { 0: true, 1: true } } },
+        phaseAssessments: { 'ai-engineer': { 0: { percentage: 95, passed: true } } },
+        xp: 350,
+        level: 2
+      })
+    });
+    assert(syncA.status === 200, 'User A progress syncs successfully with 200 OK');
+    assert(syncA.data.user.progress['ai-engineer'][0][0] === true, 'User A progress recorded');
+
+    console.log('\n[Test 10] Register Independent User B');
+    const emailB = `test-b-${Date.now()}@test.com`;
+    const regB = await request('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Cosmic User B',
+        email: emailB,
+        password: 'securePasswordB123!',
+        targetRole: 'fullstack-architect'
+      })
+    });
+    assert(regB.status === 201, 'User B registered successfully');
+
+    console.log('\n[Test 11] Verify User B Progress is Clean & Isolated');
+    const meB = await request('/api/auth/me', {
+      headers: { 'Authorization': `Bearer ${regB.data.token}` }
+    });
+    assert(meB.status === 200, 'User B me endpoint responds 200 OK');
+    assert(Object.keys(meB.data.user.progress).length === 0, 'User B progress is completely empty (no leak from User A)');
+    assert(Object.keys(meB.data.user.phaseAssessments).length === 0, 'User B phase assessments are empty (no leak from User A)');
+
+    console.log('\n[Test 12] Verify User A Progress Remains Preserved');
+    const meA2 = await request('/api/auth/me', {
+      headers: { 'Authorization': `Bearer ${reg.data.token}` }
+    });
+    assert(meA2.data.user.progress['ai-engineer'][0][0] === true, 'User A progress is preserved');
+    assert(meA2.data.user.phaseAssessments['ai-engineer'][0].percentage === 95, 'User A assessment is preserved');
+
   } catch (err) {
     console.error('Test execution error:', err);
     failed++;

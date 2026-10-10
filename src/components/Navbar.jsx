@@ -84,7 +84,7 @@ export default function Navbar() {
       <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
-          const isActive = activeView === item.id;
+          const isActive = activeView === item.id || (item.id === 'roadmap' && (activeView === 'quiz' || activeView === 'projects'));
           const hasBadge = item.id === 'compare' && comparedCareers.length > 0;
           return (
             <motion.button

@@ -4,14 +4,68 @@ import { CAREER_NODES } from '../data/careers.js';
 import { synthesizeCareerBlueprint } from '../utils/blueprintSynthesizer.js';
 
 const API_BASE = import.meta.env?.VITE_API_BASE_URL || '';
+const ACCOUNT_STORAGE_PREFIX = 'careermitra_user_data_';
+const ACTIVE_ACCOUNT_KEY = 'careermitra_active_account_key';
 
-// ── Zustand Store with localStorage persistence ──
+export function getAccountKey(user) {
+  if (!user) return 'guest_anonymous';
+  if (user.isGuest) return `guest_${user.id || 'session'}`;
+  return (user.id || user.email || 'user_unknown').toLowerCase().trim();
+}
+
+export function getCleanAccountState(user = null) {
+  return {
+    progress: {},
+    activityHistory: [],
+    phaseAssessments: {},
+    readinessAssessments: {},
+    projectProgress: {},
+    projectSubmissions: {},
+    savedRoadmaps: [],
+    notes: {},
+    badges: ['first_milestone', 'explorer', 'ai_oracle'],
+    streakDays: 1,
+    customCareers: [],
+    deletedCareerIds: [],
+    userProfile: user ? {
+      name: user.name || '',
+      email: user.email || '',
+      goalCareer: user.targetRole || '',
+      skills: user.skills || [],
+      timelineMonths: user.targetMonths || 6,
+      hoursPerWeek: user.weeklyHours || 15,
+    } : null,
+  };
+}
+
+export function loadAccountDataFromStorage(accountKey) {
+  try {
+    const raw = localStorage.getItem(ACCOUNT_STORAGE_PREFIX + accountKey);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.warn('Failed to load user state from localStorage:', e);
+  }
+  return null;
+}
+
+export function saveAccountDataToStorage(accountKey, data) {
+  try {
+    localStorage.setItem(ACCOUNT_STORAGE_PREFIX + accountKey, JSON.stringify(data));
+  } catch (e) {
+    console.warn('Failed to save user state to localStorage:', e);
+  }
+}
+
+// ── Zustand Store with strict per-account isolation ──
 const useStore = create(
   persist(
     (set, get) => ({
-      // ── User Profile ──
+      // ── User Profile & Preferences ──
       userProfile: null,
-      setUserProfile: (profile) => set({ userProfile: profile }),
+      setUserProfile: (profile) => {
+        set({ userProfile: profile });
+        get().persistCurrentAccount();
+      },
 
       // ── Selected Career ──
       selectedCareer: null,
@@ -56,6 +110,7 @@ const useStore = create(
         };
         const updated = [...get().customCareers, newCareer];
         set({ customCareers: updated, selectedCareer: newCareer });
+        get().persistCurrentAccount();
         return newCareer;
       },
       deletedCareerIds: [],
@@ -76,9 +131,11 @@ const useStore = create(
           comparedCareers: newCompared,
           activeRoadmap: newActiveRoadmap,
         });
+        get().persistCurrentAccount();
       },
       restoreDefaultCareers: () => {
         set({ deletedCareerIds: [] });
+        get().persistCurrentAccount();
       },
       getAllCareers: () => {
         const { customCareers, deletedCareerIds } = get();
@@ -132,7 +189,7 @@ const useStore = create(
       // ── Progress Tracking & Real-Time Activity Log ──
       // { [careerId]: { [phaseIndex]: { [taskIndex]: boolean } } }
       progress: {},
-      activityHistory: [], // Real timestamps of completed milestones [{ careerId, phaseIndex, taskIndex, taskTitle, timestamp }]
+      activityHistory: [], // [{ id, careerId, phaseIndex, taskIndex, taskTitle, timestamp }]
 
       // ── Gamification, Badges & Audio ──
       soundEnabled: true,
@@ -142,12 +199,13 @@ const useStore = create(
         set({ warpActive: true });
         setTimeout(() => set({ warpActive: false }), duration);
       },
-      streakDays: 4,
+      streakDays: 1,
       badges: ['first_milestone', 'explorer', 'ai_oracle'],
       unlockBadge: (badgeId) => {
         const { badges } = get();
         if (!badges.includes(badgeId)) {
           set({ badges: [...badges, badgeId] });
+          get().persistCurrentAccount();
         }
       },
       showBadgesModal: false,
@@ -156,7 +214,7 @@ const useStore = create(
       clearRecentXPGain: () => set({ recentXPGain: null }),
 
       toggleTask: (careerId, phaseIndex, taskIndex, taskTitle = 'Milestone') => {
-        const { progress, activityHistory, user, badges, unlockBadge } = get();
+        const { progress, activityHistory, user, badges } = get();
         const careerProgress = progress[careerId] || {};
         const phaseProgress = careerProgress[phaseIndex] || {};
         const current = phaseProgress[taskIndex] || false;
@@ -179,8 +237,7 @@ const useStore = create(
           );
         }
 
-        // Live calculate XP
-        const totalCompletedAcrossAll = Object.values({
+        const newProgress = {
           ...progress,
           [careerId]: {
             ...careerProgress,
@@ -189,7 +246,10 @@ const useStore = create(
               [taskIndex]: nextState,
             },
           },
-        }).reduce((acc, cp) => {
+        };
+
+        // Live calculate XP
+        const totalCompletedAcrossAll = Object.values(newProgress).reduce((acc, cp) => {
           return acc + Object.values(cp).reduce((pAcc, pp) => {
             return pAcc + Object.values(pp).filter(Boolean).length;
           }, 0);
@@ -207,21 +267,14 @@ const useStore = create(
         }
 
         set({
-          progress: {
-            ...progress,
-            [careerId]: {
-              ...careerProgress,
-              [phaseIndex]: {
-                ...phaseProgress,
-                [taskIndex]: nextState,
-              },
-            },
-          },
+          progress: newProgress,
           activityHistory: updatedHistory,
           user: user ? { ...user, xp: newXP, level: newLevel } : { id: 'local', xp: newXP, level: newLevel },
           badges: newBadges,
           recentXPGain: nextState ? { amount: 50, reason: taskTitle || 'Milestone Completed', id: Date.now() } : null,
         });
+
+        get().persistCurrentAccount();
       },
 
       awardXP: (amount = 50, reason = 'Achievement Unlocked') => {
@@ -233,6 +286,7 @@ const useStore = create(
           user: user ? { ...user, xp: newXP, level: newLevel } : { id: 'local', xp: newXP, level: newLevel },
           recentXPGain: { amount, reason, id: Date.now() },
         });
+        get().persistCurrentAccount();
       },
 
       // ── Gamified Assessments State ──
@@ -258,6 +312,7 @@ const useStore = create(
           unlockBadge('quiz_master');
         }
         set({ phaseAssessments: updated });
+        get().persistCurrentAccount();
       },
 
       // { [careerId]: { score, total, percentage, passed, verdict, report, date } }
@@ -278,6 +333,19 @@ const useStore = create(
           unlockBadge('career_ready');
         }
         set({ readinessAssessments: updated });
+        get().persistCurrentAccount();
+      },
+
+      // ── Dedicated Quiz & Assessment View Navigation ──
+      activeAssessment: null,
+      setActiveAssessment: (assessment) => set({ activeAssessment: assessment }),
+      openQuizAssessment: (assessment) => {
+        get().triggerWarp(500);
+        set({ activeAssessment: assessment, activeView: 'quiz' });
+      },
+      closeQuizAssessment: () => {
+        get().triggerWarp(500);
+        set({ activeAssessment: null, activeView: 'roadmap' });
       },
 
       // ── Industry Portfolio Projects Tracking ──
@@ -306,6 +374,7 @@ const useStore = create(
             },
           },
         });
+        get().persistCurrentAccount();
       },
       setProjectStatus: (careerId, projectId, isCompleted) => {
         const { projectProgress, awardXP, unlockBadge } = get();
@@ -328,6 +397,37 @@ const useStore = create(
             },
           },
         });
+        get().persistCurrentAccount();
+      },
+
+      // ── Dedicated Project Portal View Navigation ──
+      selectedProject: null,
+      setSelectedProject: (project) => set({ selectedProject: project }),
+      openProjectPortal: (project, career = null) => {
+        get().triggerWarp(500);
+        set({
+          selectedProject: project,
+          ...(career ? { selectedCareer: career } : {}),
+          activeView: 'projects',
+        });
+      },
+      closeProjectPortal: () => {
+        get().triggerWarp(500);
+        set({ selectedProject: null, activeView: 'roadmap' });
+      },
+      projectSubmissions: {}, // { [careerId]: { [projectId]: { repoUrl, demoUrl, savedAt } } }
+      saveProjectSubmission: (careerId, projectId, repoUrl, demoUrl) => {
+        const { projectSubmissions } = get();
+        const cp = projectSubmissions[careerId] || {};
+        const updated = {
+          ...projectSubmissions,
+          [careerId]: {
+            ...cp,
+            [projectId]: { repoUrl, demoUrl, savedAt: new Date().toISOString() },
+          },
+        };
+        set({ projectSubmissions: updated });
+        get().persistCurrentAccount();
       },
 
       getCareerProgress: (careerId) => {
@@ -361,21 +461,83 @@ const useStore = create(
       saveRoadmap: (roadmap) => {
         const { savedRoadmaps } = get();
         const exists = savedRoadmaps.find((r) => r.careerId === roadmap.careerId);
+        let updated;
         if (exists) {
-          set({ savedRoadmaps: savedRoadmaps.map((r) => r.careerId === roadmap.careerId ? roadmap : r) });
+          updated = savedRoadmaps.map((r) => r.careerId === roadmap.careerId ? roadmap : r);
         } else {
-          set({ savedRoadmaps: [...savedRoadmaps, roadmap] });
+          updated = [...savedRoadmaps, roadmap];
         }
+        set({ savedRoadmaps: updated });
+        get().persistCurrentAccount();
       },
       deleteSavedRoadmap: (careerId) => {
-        set({ savedRoadmaps: get().savedRoadmaps.filter((r) => r.careerId !== careerId) });
+        const updated = get().savedRoadmaps.filter((r) => r.careerId !== careerId);
+        set({ savedRoadmaps: updated });
+        get().persistCurrentAccount();
       },
 
       // ── Notes ──
-      // { [careerId]: string }
       notes: {},
       setNote: (careerId, text) => {
-        set({ notes: { ...get().notes, [careerId]: text } });
+        const updated = { ...get().notes, [careerId]: text };
+        set({ notes: updated });
+        get().persistCurrentAccount();
+      },
+
+      // ── Per-Account Persistence & Sync Helper ──
+      persistCurrentAccount: () => {
+        const state = get();
+        const accountKey = getAccountKey(state.user);
+        const data = {
+          progress: state.progress,
+          activityHistory: state.activityHistory,
+          phaseAssessments: state.phaseAssessments,
+          readinessAssessments: state.readinessAssessments,
+          projectProgress: state.projectProgress,
+          projectSubmissions: state.projectSubmissions,
+          savedRoadmaps: state.savedRoadmaps,
+          notes: state.notes,
+          badges: state.badges,
+          streakDays: state.streakDays,
+          customCareers: state.customCareers,
+          deletedCareerIds: state.deletedCareerIds,
+          userProfile: state.userProfile,
+          xp: state.user?.xp || 100,
+          level: state.user?.level || 1,
+        };
+        saveAccountDataToStorage(accountKey, data);
+        get().syncAccountToServer();
+      },
+
+      syncAccountToServer: async () => {
+        const { user, token, isGuest, progress, activityHistory, phaseAssessments, readinessAssessments, projectProgress, savedRoadmaps, notes, badges, customCareers, streakDays, userProfile } = get();
+        if (!user || isGuest || !token) return;
+        try {
+          await fetch(`${API_BASE}/api/user/sync`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              progress,
+              activityHistory,
+              phaseAssessments,
+              readinessAssessments,
+              projectProgress,
+              savedRoadmaps,
+              notes,
+              badges,
+              customCareers,
+              streakDays,
+              xp: user.xp,
+              level: user.level,
+              userProfile,
+            })
+          });
+        } catch (_) {
+          // Background sync failure handled gracefully
+        }
       },
 
       // ── Authentication & User State ──
@@ -390,15 +552,82 @@ const useStore = create(
       closeAuthModal: () => set({ authModalOpen: false }),
 
       setAuth: (user, token) => {
+        const prevUser = get().user;
+        if (prevUser) {
+          // Save previous user account's state before switching
+          const prevKey = getAccountKey(prevUser);
+          const prevSnapshot = {
+            progress: get().progress,
+            activityHistory: get().activityHistory,
+            phaseAssessments: get().phaseAssessments,
+            readinessAssessments: get().readinessAssessments,
+            projectProgress: get().projectProgress,
+            projectSubmissions: get().projectSubmissions,
+            savedRoadmaps: get().savedRoadmaps,
+            notes: get().notes,
+            badges: get().badges,
+            streakDays: get().streakDays,
+            customCareers: get().customCareers,
+            deletedCareerIds: get().deletedCareerIds,
+            userProfile: get().userProfile,
+            xp: prevUser.xp || 100,
+            level: prevUser.level || 1,
+          };
+          saveAccountDataToStorage(prevKey, prevSnapshot);
+        }
+
+        const accountKey = getAccountKey(user);
+        localStorage.setItem(ACTIVE_ACCOUNT_KEY, accountKey);
         if (token) localStorage.setItem('careermitra_token', token);
+
+        // Load targeted user account's isolated data
+        const localSaved = loadAccountDataFromStorage(accountKey);
+        const clean = getCleanAccountState(user);
+
+        // Merge server user object progress & local saved progress for THIS account only
+        const merged = {
+          ...clean,
+          ...(localSaved || {}),
+          ...(user?.progress && Object.keys(user.progress).length > 0 ? { progress: user.progress } : {}),
+          ...(user?.activityHistory && user.activityHistory.length > 0 ? { activityHistory: user.activityHistory } : {}),
+          ...(user?.phaseAssessments && Object.keys(user.phaseAssessments).length > 0 ? { phaseAssessments: user.phaseAssessments } : {}),
+          ...(user?.readinessAssessments && Object.keys(user.readinessAssessments).length > 0 ? { readinessAssessments: user.readinessAssessments } : {}),
+          ...(user?.projectProgress && Object.keys(user.projectProgress).length > 0 ? { projectProgress: user.projectProgress } : {}),
+          ...(user?.savedRoadmaps && user.savedRoadmaps.length > 0 ? { savedRoadmaps: user.savedRoadmaps } : {}),
+          ...(user?.notes && Object.keys(user.notes).length > 0 ? { notes: user.notes } : {}),
+          ...(user?.badges && user.badges.length > 0 ? { badges: user.badges } : {}),
+          ...(user?.customCareers && user.customCareers.length > 0 ? { customCareers: user.customCareers } : {}),
+          ...(user?.userProfile ? { userProfile: user.userProfile } : {}),
+        };
+
+        const accountXP = user?.xp !== undefined ? user.xp : (merged.xp || 100);
+        const accountLevel = user?.level !== undefined ? user.level : (merged.level || 1);
+        const updatedUser = { ...user, xp: accountXP, level: accountLevel };
+
         set({
-          user,
+          user: updatedUser,
           token,
           isAuthenticated: true,
           isGuest: Boolean(user?.isGuest),
           authModalOpen: false,
           activeView: get().activeView === 'landing' ? 'galaxy' : get().activeView,
+          progress: merged.progress || {},
+          activityHistory: merged.activityHistory || [],
+          phaseAssessments: merged.phaseAssessments || {},
+          readinessAssessments: merged.readinessAssessments || {},
+          projectProgress: merged.projectProgress || {},
+          projectSubmissions: merged.projectSubmissions || {},
+          savedRoadmaps: merged.savedRoadmaps || [],
+          notes: merged.notes || {},
+          badges: merged.badges || ['first_milestone', 'explorer', 'ai_oracle'],
+          streakDays: merged.streakDays || 1,
+          customCareers: merged.customCareers || [],
+          deletedCareerIds: merged.deletedCareerIds || [],
+          userProfile: merged.userProfile || null,
         });
+
+        // Persist fresh snapshot for this isolated account
+        saveAccountDataToStorage(accountKey, merged);
       },
 
       login: async (email, password) => {
@@ -418,7 +647,7 @@ const useStore = create(
           // Offline fallback
           if (email.toLowerCase().includes('demo')) {
             const demoUser = {
-              id: 'demo-local',
+              id: 'user-demo-101',
               name: 'Demo Cosmic Explorer',
               email,
               targetRole: 'ai-engineer',
@@ -427,7 +656,7 @@ const useStore = create(
               level: 2,
             };
             get().setAuth(demoUser, 'demo-token');
-            return { success: true, message: 'Welcome to offline demo mode!' };
+            return { success: true, message: 'Welcome to demo mode!' };
           }
           return { success: false, message: 'Server unreachable. Try guest mode or start server.' };
         }
@@ -479,18 +708,90 @@ const useStore = create(
       },
 
       logout: () => {
+        const currentUser = get().user;
+        if (currentUser) {
+          const key = getAccountKey(currentUser);
+          const snapshot = {
+            progress: get().progress,
+            activityHistory: get().activityHistory,
+            phaseAssessments: get().phaseAssessments,
+            readinessAssessments: get().readinessAssessments,
+            projectProgress: get().projectProgress,
+            projectSubmissions: get().projectSubmissions,
+            savedRoadmaps: get().savedRoadmaps,
+            notes: get().notes,
+            badges: get().badges,
+            streakDays: get().streakDays,
+            customCareers: get().customCareers,
+            deletedCareerIds: get().deletedCareerIds,
+            userProfile: get().userProfile,
+            xp: currentUser.xp || 100,
+            level: currentUser.level || 1,
+          };
+          saveAccountDataToStorage(key, snapshot);
+        }
+
         localStorage.removeItem('careermitra_token');
+        localStorage.removeItem(ACTIVE_ACCOUNT_KEY);
+
+        const clean = getCleanAccountState(null);
         set({
           user: null,
           token: null,
           isAuthenticated: false,
           isGuest: false,
           activeView: 'landing',
+          activeRoadmap: null,
+          activeAssessment: null,
+          selectedProject: null,
+          ...clean,
         });
       },
 
+      initAuthSession: async () => {
+        const token = localStorage.getItem('careermitra_token');
+        if (!token) return;
+
+        try {
+          const res = await fetch(`${API_BASE}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.user) {
+              get().setAuth(data.user, token);
+            }
+          } else if (res.status === 401 || res.status === 403) {
+            get().logout();
+          }
+        } catch (err) {
+          // Offline mode verification
+          const activeKey = localStorage.getItem(ACTIVE_ACCOUNT_KEY);
+          if (activeKey) {
+            const saved = loadAccountDataFromStorage(activeKey);
+            if (saved) {
+              set({
+                progress: saved.progress || {},
+                activityHistory: saved.activityHistory || [],
+                phaseAssessments: saved.phaseAssessments || {},
+                readinessAssessments: saved.readinessAssessments || {},
+                projectProgress: saved.projectProgress || {},
+                projectSubmissions: saved.projectSubmissions || {},
+                savedRoadmaps: saved.savedRoadmaps || [],
+                notes: saved.notes || {},
+                badges: saved.badges || ['first_milestone', 'explorer', 'ai_oracle'],
+                streakDays: saved.streakDays || 1,
+                customCareers: saved.customCareers || [],
+                deletedCareerIds: saved.deletedCareerIds || [],
+                userProfile: saved.userProfile || null,
+              });
+            }
+          }
+        }
+      },
+
       // ── UI State ──
-      activeView: 'landing',      // 'landing' | 'galaxy' | 'roadmap' | 'compare' | 'profile' | 'progress'
+      activeView: 'landing',      // 'landing' | 'galaxy' | 'roadmap' | 'compare' | 'profile' | 'progress' | 'quiz' | 'projects'
       setActiveView: (view) => {
         const current = get().activeView;
         if (current !== view) {
@@ -523,21 +824,10 @@ const useStore = create(
         token: state.token,
         isAuthenticated: state.isAuthenticated,
         isGuest: state.isGuest,
-        customCareers: state.customCareers,
-        deletedCareerIds: state.deletedCareerIds,
-        activityHistory: state.activityHistory,
-        userProfile: state.userProfile,
-        progress: state.progress,
-        savedRoadmaps: state.savedRoadmaps,
-        notes: state.notes,
-        comparedCareers: state.comparedCareers,
         activeView: state.activeView,
         soundEnabled: state.soundEnabled,
-        badges: state.badges,
-        streakDays: state.streakDays,
-        phaseAssessments: state.phaseAssessments,
-        readinessAssessments: state.readinessAssessments,
-        projectProgress: state.projectProgress,
+        selectedCareer: state.selectedCareer,
+        comparedCareers: state.comparedCareers,
       }),
     }
   )
