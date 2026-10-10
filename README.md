@@ -1,5 +1,10 @@
 # 🌌 CareerMitra — Next-Gen Gamified AI Career Intelligence & Readiness Platform
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel%20Deployment-00f2fe?style=for-the-badge&logo=vercel&logoColor=white)](https://careermitra-3qqu6lxgn-pranshu25.vercel.app)
+[![Deployment](https://img.shields.io/badge/Vercel-Live-10b981?style=for-the-badge&logo=vercel&logoColor=white)](https://careermitra-3qqu6lxgn-pranshu25.vercel.app)
+
+> 🚀 **Live Deployment URL:** [https://careermitra-3qqu6lxgn-pranshu25.vercel.app](https://careermitra-3qqu6lxgn-pranshu25.vercel.app)
+>
 > **Navigate Your Career Galaxy** — An interactive, 3D gamified career intelligence universe featuring celestial constellation pathfinding, hyper-personalized AI roadmaps, 30-MCQ domain skill assessments, major career readiness certification, and 5 production capstone project portals.
 
 ---
@@ -17,6 +22,8 @@
 ---
 
 ## 🔑 Test Login Credentials (Instant Demo Access)
+
+🌐 **Live Demo Access:** [https://careermitra-3qqu6lxgn-pranshu25.vercel.app](https://careermitra-3qqu6lxgn-pranshu25.vercel.app)
 
 For judges, evaluators, and reviewers to test the complete platform immediately:
 
@@ -81,6 +88,8 @@ node test/api.test.js
 ---
 
 ### 5. 🚀 Deploying to Vercel (Production Ready)
+
+> 🌐 **Live Deployed App:** [https://careermitra-3qqu6lxgn-pranshu25.vercel.app](https://careermitra-3qqu6lxgn-pranshu25.vercel.app)
 
 CareerMitra is fully configured with [`vercel.json`](vercel.json) and an Express serverless handler at [`api/index.js`](api/index.js) for seamless 1-click Vercel deployment:
 
