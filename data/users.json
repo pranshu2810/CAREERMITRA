@@ -3,7 +3,7 @@
     "id": "user-demo-101",
     "name": "Pranshu Gupta",
     "email": "demo@careermitra.ai",
-    "passwordHash": "$2a$10$vI8A3bqvF9Wc1U9p2E3o9eO8G0S9tK1wL1x2y3z4a5b6c7d8e9f0a",
+    "passwordHash": "$2b$10$v5RX8fdzbCw9CZe5plohDu3IlLZESb/tNflcFcTlUkXffYdHWhz9y",
     "targetRole": "ai-engineer",
     "skills": [
       "Python",

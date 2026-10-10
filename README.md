@@ -1,165 +1,235 @@
-# CareerMitra 🌌
+# 🌌 CareerMitra — Next-Gen Gamified AI Career Intelligence & Readiness Platform
 
-> **Navigate Your Career Galaxy** — An AI-powered career path navigator with interactive galaxy visualization, personalized roadmaps, skill tracking, and career comparison.
-
-![CareerMitra Hero](public/assets/career_galaxy_hero.jpg)
+> **Navigate Your Career Galaxy** — An interactive, 3D gamified career intelligence universe featuring celestial constellation pathfinding, hyper-personalized AI roadmaps, 30-MCQ domain skill assessments, major career readiness certification, and 5 production capstone project portals.
 
 ---
 
-## 🚀 Features
+## 📸 Prototype & Visual Showcase
 
-### Phase 1 · Career Galaxy UI
-- **Interactive SVG Galaxy** — 10+ career constellations rendered as animated, glowing nodes connected by strength-weighted edges
-- **Clickable Career Nodes** — Hover for tooltips (salary, demand, skills), click to open rich detail modal
-- **Career Cards Grid** — Below the galaxy, filterable cards with skill chips and salary data
-- **Filter & Search** — Filter by category (Engineering, Data & AI, Design, Product, Security) or search by skills
-- **Career Detail Modal** — Phases preview, resources, stats, compare toggle, and roadmap CTA
+| 🌌 3D Interactive Career Galaxy | 🗺️ AI Roadmap & Milestone Engine |
+|:---:|:---:|
+| ![Career Galaxy Prototype](public/screenshots/career_galaxy_hero.jpg) | ![Roadmap Prototype](public/screenshots/roadmap_prototype_2.png) |
 
-### Phase 2 · AI Roadmap API & Interactive Graph
-- **AI Roadmap Generation** — Skill-match analysis, personalized phase durations, task prioritization
-- **Phase Accordion** — Expandable roadmap phases with task checklist, progress ring, and resources
-- **AI Insights Card** — Personalized summary, recommendations, and alternative paths
-- **Weekly Schedule** — Breakdown of weekly learning focus and hours
-- **Alternative Paths** — Adjacent career suggestions based on skill overlap
-
-### Phase 3 · Skill Panels & Dynamic Replanning  
-- **Task Checkboxes** — Click any task to mark complete; synced to global store
-- **Priority Labels** — AI labels tasks as `learn` or `review` based on your existing skills
-- **Dynamic Replan** — Slide to adjust timeline; AI regenerates remaining phases
-- **Notes Panel** — Persistent markdown-style notes per career path
-
-### Phase 4 · Persistence, Progress, Comparison & Export
-- **localStorage Persistence** — All progress, profiles, saved roadmaps, and notes survive page refresh via Zustand `persist`
-- **Progress Dashboard** — Radial bar chart, weekly activity line chart, per-career phase breakdowns
-- **Career Comparison** — Radar chart (skill profiles), salary bar chart, skill overlap analysis for up to 3 careers
-- **PDF Export** — Themed PDF with AI summary, phase checklists, recommendations via jsPDF
-- **Share** — Native `navigator.share` or clipboard fallback
-- **User Profile** — Name, role, experience, skill tags, target career, timeline slider, learning style
-
-### Phase 5 · Quality & Documentation
-- ✅ Build passes: 3100+ modules, zero errors
-- 🎨 Premium dark cosmic design with glassmorphism
-- ✨ Micro-animations via Framer Motion throughout
-- 🌟 Canvas starfield with shooting stars
-- ♿ Semantic HTML, unique IDs on all interactive elements
-- 📱 Responsive layout (mobile-friendly)
-
-### Phase 6 · Authentication & Cosmic Landing Page
-- 🌌 **High-Impact Landing Page** — Interactive hero, constellation ribbon preview, capability pillars, and demo triggers
-- 🔐 **JWT & Session Engine** — Register, login, instant guest access, password encryption via `bcryptjs`
-- ⚡ **Auto-fill Demo Credentials** — 1-click test drive with `demo@careermitra.ai`
-- 🛡️ **Protected Actions & XP Sync** — Synchronizes user profile, target role, and earned XP
-
-### Phase 7 · React Native Mobile Companion App (`mobile/`)
-- 📱 **Cross-Platform Mobile App** — Built with React Native & Expo in the `mobile/` directory
-- 🔗 **Unified Express Backend** — Shares identical `/api/auth/*` and `/api/careers` REST endpoints
-- 🗺️ **Mobile Constellations & Roadmap View** — Milestone checklists, category filters, and mastery meters
+| ⚡ Gamified 30-MCQ Skill Assessments | 🚀 Capstone Project Portals |
+|:---:|:---:|
+| ![Assessment Prototype](public/screenshots/roadmap_prototype_1.png) | ![Career Galaxy](public/assets/career_galaxy_hero.jpg) |
 
 ---
 
-## 🛠️ Tech Stack
+## 🔑 Test Login Credentials (Instant Demo Access)
 
-| Layer | Technology |
-|---|---|
-| Framework | React 19 + Vite 8 |
-| Styling | Vanilla CSS (custom design system) |
-| Animations | Framer Motion 14 |
-| State | Zustand 5 (with `persist`) |
-| Charts | Recharts 3 |
-| Export | jsPDF 4, html2canvas |
-| Icons | Lucide React |
-| Toasts | react-hot-toast 2 |
-| Routing | react-router-dom 7 (view-based) |
+For judges, evaluators, and reviewers to test the complete platform immediately:
+
+| Access Method | Email / Identifier | Password | Access Level |
+|---|---|---|---|
+| **Pre-Seeded Demo Account** | `demo@careermitra.ai` | `password123` | Full Access (Level 3, 450 XP, Verified Profile) |
+| **Instant Guest Access** | *Click "Continue as Guest"* | *No password required* | Instant 1-Click Onboarding |
+| **New Account** | *Register any email* | *Your choice* | Fresh onboarding with +100 starting XP |
+
+> 💡 **Tip:** On the landing page or navbar, click **Sign In** and use the credentials above, or simply tap **"⚡ Continue as Guest (Instant Access)"** for zero-friction exploration!
 
 ---
 
-## 🔧 Setup
+## 💻 How to Run the Project in CMD / Terminal
 
-```bash
-# Install dependencies
+### Prerequisites
+- **Node.js** (v18.0.0 or higher recommended)
+- **npm** (v9.0.0 or higher)
+
+### 1. Clone the Repository
+```cmd
+git clone https://github.com/pranshu2810/CAREERMITRA.git
+cd CAREERMITRA
+```
+
+### 2. Install Dependencies
+```cmd
 npm install
+```
 
-# Start frontend dev server (Vite)
+### 3. Run Both Frontend & Backend
+
+You can run both concurrently or in separate terminal windows:
+
+#### Option A: Quick Dual Launch (Two Terminals)
+**Terminal 1 (Backend API Server):**
+```cmd
+node server.js
+```
+*Backend runs at:* **http://localhost:3000** (Health check: http://localhost:3000/api/health)
+
+**Terminal 2 (Vite Frontend):**
+```cmd
 npm run dev
+```
+*Frontend runs at:* **http://localhost:5173**
 
-# Start backend API server (Express - optional)
-npm run dev:server
+---
 
-# Production build
+#### Option B: Production Build & Preview
+```cmd
 npm run build
-
-# Preview production build
 npm run preview
 ```
 
-The frontend runs at **http://localhost:5173**  
-The backend API runs at **http://localhost:3000**
+### 4. Run Automated Test Verification Suite
+```cmd
+node test/api.test.js
+```
+*Verifies 24 automated backend & AI endpoints (Health, Catalog, Roadmaps, Replanning, Comparison, Auth).*
 
 ---
 
-## 📁 Project Structure
+## 🌟 Key Features & Capabilities
+
+### 1. 🌌 3D Interactive Career Galaxy & Constellation Canvas
+- **3D Perspective Starfield & Parallax Nebula Engine:** 360+ celestial bodies projected in 3D $(X,Y,Z)$ with inertia damping, cursor stardust, and Hyperspace Warp Drive.
+- **Relational Constellations:** SVG node graph connecting career clusters by relational strength, displaying real-time market salaries ($110k–$190k / ₹18–45 LPA) and demand growth rates.
+- **Career Management:** Delete any career field directly with confirmation, and restore all paths anytime via a dynamic 1-click **"Restore Careers"** button.
+- **Custom Career Constellations:** Add any emerging profession (*Fine Arts, Quantum Computing, Robotics, Game Dev*) with automatic domain blueprint synthesis.
+
+### 2. 🗺️ AI-Powered Hyper-Personalized Roadmaps
+- **Dynamic Skill-Match Engine:** Compares candidate skills against target role requirements, automatically prioritizing gaps as `learn` vs `review`.
+- **Dynamic Replanning Slider:** Adjust target duration (3 to 24 months) and watch the AI dynamically redistribute milestone hours and difficulty tiers.
+- **Dual-Mode Experience:** Switch seamlessly between **Guided AI Roadmap** and **Manual Roadmap Builder** to add custom phases, milestones, or notes.
+- **Native Web Audio Synthesizer:** Real-time oscillator sound design (chimes, warp sweeps, fanfares) with zero external MP3 assets or network latency.
+- **PDF Export & Sharing:** Download formatted, print-ready career roadmaps via `html2canvas` and `jsPDF`.
+
+### 3. ⚡ Gamified 30-MCQ Phase Skill Assessments
+- **30 Questions After Every Phase:** Dynamically generated domain-calibrated MCQs testing Foundational, Intermediate, and Advanced concepts.
+- **Gamified HUD Arena:**
+  - Real-time countdown timer with pressure warnings.
+  - Combo streak multipliers (`🔥 3x Streak`) with celebratory particle fireworks.
+  - **Lifelines:** ⚡ **50:50 Lifeline** (eliminates two wrong answers) and 💡 **AI Hint** (contextual architectural clues).
+  - **30-Question Navigator Grid:** Slide-out drawer allowing instant jumps to any question with color-coded status.
+  - **Instant Audio Feedback:** Crisp harmonic chimes on correct choices and soft buzzers on incorrect answers.
+  - **Detailed Analysis Mode:** Review all 30 questions with comprehensive educational explanations.
+
+### 4. 🏆 Major Final Career Readiness Simulation & Verifiable Certificate
+- **Comprehensive 30-Question Capstone Exam:** Scenario-driven exam assessing real-world incident debugging, system architecture, and security tradeoffs.
+- **Readiness Scoring:** Computes overall career readiness score (e.g. *93.3% Industry Ready*), awarding +300 XP and the `career_ready` badge.
+- **Official Galactic Certificate:** Generates a verifiable digital certificate displaying candidate name, career role, score percentage, and unique verification hash token.
+
+### 5. 🚀 5 Industry Portfolio Capstones & Interactive Portals
+- **Curated 5 Flagship Projects per Role:** From *Distributed Raft In-Memory Caches* to *Multimodal Vector Search Engines*.
+- **Interactive Project Portal Modal:**
+  - Executive summary and real-world business problem solved.
+  - Technical architecture blueprints and component specifications.
+  - **Interactive Milestone Checklist:** Check off steps as you build; each step claims +30 XP with celebratory fanfare and confetti!
+  - **Recruiter-Ready Resume Bullets:** Written in the Google X-Y-Z formula with 1-click clipboard copy.
+  - **"Mark Capstone Complete":** Awards +120 XP and unlocks the `project_builder` badge.
+
+### 6. ⚖️ Multi-Role Radar Comparison & Analytics
+- Side-by-side radar skill profile analysis for up to 3 careers.
+- Comparative compensation distribution and market growth rate bar charts.
+
+---
+
+## 🛠️ Complete Technical Architecture
+
+```mermaid
+graph TD
+    A["Frontend Client (React 18 + Vite)"] --> B["3D Starfield & Physics Engine"]
+    A --> C["Zustand Global State (LocalStorage Persist)"]
+    A --> D["Web Audio API Synthesizer (0 Asset Latency)"]
+    A --> E["Backend API (Express.js / Node.js)"]
+    E --> F["Google Gemini 1.5 Flash API"]
+    E --> G["Deterministic Domain Synthesis Fallback Engine"]
+    E --> H["JWT & Bcrypt Security Layer"]
+    A --> I["PDF Generation Engine (jsPDF + html2canvas)"]
+```
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Frontend Framework** | React 18, Vite 8 | Ultra-fast client-side reactive rendering and HMR |
+| **Styling & Theme** | Vanilla CSS (Glassmorphism design system) | 100% bespoke design control with dark cosmic tokens |
+| **Motion & Physics** | Framer Motion 14, Canvas-Confetti | Smooth 60 FPS transitions, spring physics, and confetti |
+| **State & Persistence** | Zustand 5 (with `persist` middleware) | Synchronizes roadmaps, assessments, and badges to `localStorage` |
+| **Audio Synthesis** | Web Audio API (Native Oscillators) | Low-latency sound design (0 external MP3 files) |
+| **Data Visuals** | Recharts 3 | Responsive Radar charts, Bar charts, and Progress meters |
+| **Backend API** | Node.js, Express.js | REST endpoints for auth, careers, and roadmapping |
+| **AI Intelligence** | Google Gemini 1.5 Flash + Procedural Engine | High-throughput AI roadmap and assessment synthesis |
+| **Security** | JWT, bcryptjs | Encrypted session tokens and password hashing |
+| **Companion App** | React Native, Expo (`mobile/`) | Cross-platform mobile version sharing unified REST API |
+
+---
+
+## 📁 Repository Directory Structure
 
 ```
 CareerMitra/
+├── data/
+│   ├── defaultBlueprints.js      # Core cluster blueprints & fallback data
+│   └── users.json                # User database with hashed credentials
+├── public/
+│   ├── assets/                   # Static icons & hero graphics
+│   └── screenshots/              # Prototype demonstration screenshots
+│       ├── career_galaxy_hero.jpg
+│       ├── roadmap_prototype_1.png
+│       └── roadmap_prototype_2.png
 ├── src/
 │   ├── components/
-│   │   ├── CareerGalaxy.jsx      # SVG galaxy + career cards
-│   │   ├── CareerDetailModal.jsx # Career detail overlay
-│   │   ├── Navbar.jsx            # Animated top navigation
-│   │   └── StarField.jsx         # Canvas starfield background
-│   ├── pages/
-│   │   ├── RoadmapView.jsx       # AI roadmap + task tracking
-│   │   ├── CompareView.jsx       # Career comparison charts
-│   │   ├── ProgressView.jsx      # Progress dashboard
-│   │   └── ProfileView.jsx       # User profile + saved roadmaps
-│   ├── store/
-│   │   └── useStore.js           # Zustand global state (persisted)
+│   │   ├── AssessmentQuizModal.jsx # Gamified 30-MCQ Arena (Lifelines, Timer, Streaks)
+│   │   ├── CareerDetailModal.jsx   # Detailed career inspection & delete action
+│   │   ├── CareerGalaxy.jsx        # 3D interactive constellation node canvas
+│   │   ├── GamificationHUD.jsx     # Badges codex, level telemetry, XP popups
+│   │   ├── HoloCard.jsx            # 3D perspective tilt holographic cards
+│   │   ├── Navbar.jsx              # Audio toggle, warp speed trigger, profile HUD
+│   │   ├── ProjectPortalModal.jsx  # Capstone portal with milestones & resume bullets
+│   │   └── StarField.jsx           # 3D canvas starfield & inertia damping engine
 │   ├── data/
-│   │   └── careers.js            # Career nodes, edges, metadata
+│   │   └── careers.js              # Career nodes, edges, skills, and salaries
+│   ├── pages/
+│   │   ├── CompareView.jsx         # Multi-career radar & salary comparison
+│   │   ├── LandingView.jsx         # Cosmic landing page with auth triggers
+│   │   ├── ProfileView.jsx         # User profile, skills, and target role settings
+│   │   ├── ProgressView.jsx        # Activity timeline, XP breakdown, mastery charts
+│   │   └── RoadmapView.jsx         # Roadmap milestones, assessments & 5 projects
+│   ├── store/
+│   │   └── useStore.js             # Global persisted state (Zustand)
 │   ├── utils/
-│   │   ├── roadmapAPI.js         # AI roadmap generation logic
-│   │   └── exportUtils.js        # PDF export, share utilities
-│   ├── App.jsx                   # Root component, view routing
-│   ├── main.jsx                  # React entry point
-│   └── index.css                 # Global design system (800+ lines)
-├── public/
-│   └── assets/
-│       ├── career_galaxy_hero.jpg
-│       └── favicon.svg
-├── server.js                     # Express backend API (pre-existing)
-├── vite.config.js
-└── package.json
+│   │   ├── assessmentGenerator.js  # 30-MCQ phase & career readiness generator
+│   │   ├── blueprintSynthesizer.js # Procedural generator for custom careers
+│   │   ├── domainProjects.js       # 5 production capstone projects per role
+│   │   ├── exportUtils.js          # jsPDF and html2canvas PDF export
+│   │   ├── roadmapAPI.js           # Adaptive roadmap synthesizer
+│   │   └── soundFX.js              # Native Web Audio API sound synthesizer
+│   ├── App.jsx                     # Route coordinator & global modals
+│   ├── index.css                   # Custom cosmic design system (800+ lines)
+│   └── main.jsx                    # Application entry point
+├── test/
+│   └── api.test.js                 # 24-test automated backend verification suite
+├── mobile/                         # React Native / Expo companion app
+├── server.js                       # Express backend server with Gemini & synthesis
+├── package.json
+└── README.md
 ```
 
 ---
 
-## 🎨 Design System
+## 📡 REST API Reference
 
-The app uses a custom CSS design system in `index.css` with:
-
-- **Colors**: Deep space (`#04030d`) → Violet (`#7c3aed`) → Cyan (`#06b6d4`) palette
-- **Typography**: Outfit (display) + Inter (body) + JetBrains Mono (code)
-- **Components**: Glass cards, gradient buttons, progress bars, badges, modals
-- **Animations**: Float, pulse-glow, shimmer, nodeAppear, edgeDraw, spring transitions
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| `GET` | `/api/health` | Service health status check | No |
+| `POST` | `/api/auth/register` | Register new user with hashed password | No |
+| `POST` | `/api/auth/login` | Authenticate and receive JWT token | No |
+| `POST` | `/api/auth/guest` | Instant 1-click guest authentication | No |
+| `GET` | `/api/auth/me` | Retrieve profile and earned XP | Yes (JWT) |
+| `GET` | `/api/careers` | Retrieve all career clusters and paths | No |
+| `GET` | `/api/career/:id` | Retrieve detailed career blueprint | No |
+| `POST` | `/api/roadmap/generate`| Generate AI roadmap with Gemini / synthesis | Optional |
+| `POST` | `/api/roadmap/replan` | Dynamically replan remaining roadmap phases | Optional |
 
 ---
 
-## 🤖 AI Roadmap Engine
+## 🏆 Presentation Pitch & Slide Deck Guide
 
-The `roadmapAPI.js` simulates an AI model that:
-
-1. **Computes skill match** — Compares user skills to career skill requirements (0–90% match)
-2. **Adjusts phase durations** — Compresses early phases for experienced learners
-3. **Prioritizes tasks** — Labels known skills as `review`, unknown as `learn`
-4. **Generates personalized summary** — Contextual AI description with match percentage
-5. **Creates weekly plan** — Maps phases to week ranges with hour targets
-6. **Suggests alternative paths** — Based on skill overlap with related careers
-7. **Dynamic replanning** — Adjusts remaining phases when timeline or skills change
-
-> **Production Integration**: Replace `delay()` in `roadmapAPI.js` with a real Gemini API call (`generateContent`) for live AI-powered roadmaps.
+A comprehensive, slide-by-slide presentation deck outline, AI generator prompt for Gamma/Slides, and a 3-minute presenter script are available in:  
+📄 **[`presentation_deck_and_pitch.md`](presentation_deck_and_pitch.md)**
 
 ---
 
 ## 📄 License
 
-MIT © CareerMitra / Antigravity
+MIT © CareerMitra Team
