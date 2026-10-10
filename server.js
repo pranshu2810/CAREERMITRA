@@ -16,7 +16,10 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'careermitra_super_cosmic_jwt_secret_2026';
-const USERS_FILE = path.join(__dirname, 'data', 'users.json');
+const isVercel = Boolean(process.env.VERCEL);
+const USERS_FILE = isVercel
+  ? path.join('/tmp', 'users.json')
+  : path.join(__dirname, 'data', 'users.json');
 
 app.use(cors());
 app.use(express.json());
@@ -38,11 +41,29 @@ const DEFAULT_DEMO_USER = {
   createdAt: '2026-10-10T00:00:00.000Z'
 };
 
+let memoryUsers = null;
+
 function getUsers() {
+  if (memoryUsers && memoryUsers.length > 0) {
+    return memoryUsers;
+  }
   try {
     if (!fs.existsSync(USERS_FILE)) {
-      const initialUsers = [DEFAULT_DEMO_USER];
-      fs.writeFileSync(USERS_FILE, JSON.stringify(initialUsers, null, 2), 'utf-8');
+      let initialUsers = [DEFAULT_DEMO_USER];
+      const seedFile = path.join(__dirname, 'data', 'users.json');
+      if (fs.existsSync(seedFile)) {
+        try {
+          const raw = fs.readFileSync(seedFile, 'utf-8');
+          const parsed = JSON.parse(raw || '[]');
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            initialUsers = parsed;
+          }
+        } catch (_) {}
+      }
+      try {
+        fs.writeFileSync(USERS_FILE, JSON.stringify(initialUsers, null, 2), 'utf-8');
+      } catch (_) {}
+      memoryUsers = initialUsers;
       return initialUsers;
     }
     const data = fs.readFileSync(USERS_FILE, 'utf-8');
@@ -51,18 +72,21 @@ function getUsers() {
       users.unshift(DEFAULT_DEMO_USER);
       saveUsers(users);
     }
+    memoryUsers = users;
     return users;
   } catch (e) {
     console.error('Error reading users file:', e);
-    return [DEFAULT_DEMO_USER];
+    memoryUsers = [DEFAULT_DEMO_USER];
+    return memoryUsers;
   }
 }
 
 function saveUsers(users) {
+  memoryUsers = users;
   try {
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf-8');
   } catch (e) {
-    console.error('Error writing users file:', e);
+    console.warn('Notice: filesystem write skipped, keeping in-memory state:', e.message);
   }
 }
 
@@ -617,11 +641,25 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Fallback route for SPA
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+// Fallback route for SPA when running standalone Express server
+const isDirectRun = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 
-app.listen(PORT, () => {
-  console.log(`🌌 CareerMitra Server is orbiting on http://localhost:${PORT}`);
-});
+if (isDirectRun && !process.env.VERCEL) {
+  const distIndex = path.join(__dirname, 'dist', 'index.html');
+  const publicIndex = path.join(__dirname, 'public', 'index.html');
+  app.get('*', (req, res) => {
+    if (fs.existsSync(distIndex)) {
+      res.sendFile(distIndex);
+    } else if (fs.existsSync(publicIndex)) {
+      res.sendFile(publicIndex);
+    } else {
+      res.status(404).json({ success: false, message: 'Not found' });
+    }
+  });
+
+  app.listen(PORT, () => {
+    console.log(`🌌 CareerMitra Server is orbiting on http://localhost:${PORT}`);
+  });
+}
+
+export default app;

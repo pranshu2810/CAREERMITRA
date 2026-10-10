@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware';
 import { CAREER_NODES } from '../data/careers.js';
 import { synthesizeCareerBlueprint } from '../utils/blueprintSynthesizer.js';
 
+const API_BASE = import.meta.env?.VITE_API_BASE_URL || '';
+
 // ── Zustand Store with localStorage persistence ──
 const useStore = create(
   persist(
@@ -401,7 +403,7 @@ const useStore = create(
 
       login: async (email, password) => {
         try {
-          const res = await fetch('http://localhost:3000/api/auth/login', {
+          const res = await fetch(`${API_BASE}/api/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password }),
@@ -433,7 +435,7 @@ const useStore = create(
 
       register: async (name, email, password, targetRole = 'ai-engineer', skills = []) => {
         try {
-          const res = await fetch('http://localhost:3000/api/auth/register', {
+          const res = await fetch(`${API_BASE}/api/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, email, password, targetRole, skills }),
@@ -451,7 +453,7 @@ const useStore = create(
 
       loginAsGuest: async () => {
         try {
-          const res = await fetch('http://localhost:3000/api/auth/guest', {
+          const res = await fetch(`${API_BASE}/api/auth/guest`, {
             method: 'POST',
           });
           const data = await res.json();

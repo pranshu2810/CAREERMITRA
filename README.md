@@ -80,6 +80,19 @@ node test/api.test.js
 
 ---
 
+### 5. 🚀 Deploying to Vercel (Production Ready)
+
+CareerMitra is fully configured with [`vercel.json`](vercel.json) and an Express serverless handler at [`api/index.js`](api/index.js) for seamless 1-click Vercel deployment:
+
+1. **Import Repository**: Go to [vercel.com](https://vercel.com) and select **"Add New Project"** → Import **`pranshu2810/CAREERMITRA`**.
+2. **Framework Detection**: Vercel automatically detects **Vite** (`dist/` build output).
+3. **Environment Variables (Optional)**:
+   - `JWT_SECRET`: Custom secure string for signing tokens (has cosmic fallback).
+   - `GEMINI_API_KEY`: *(Optional)* For direct Google Gemini 1.5 Flash roadmap synthesis.
+4. **Click Deploy**: In ~45 seconds, your live cosmic career platform is active with both the React frontend and all `/api/*` endpoints!
+
+---
+
 ## 🌟 Key Features & Capabilities
 
 ### 1. 🌌 3D Interactive Career Galaxy & Constellation Canvas
