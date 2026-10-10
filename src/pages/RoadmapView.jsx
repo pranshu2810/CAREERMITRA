@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, RefreshCw, Download, Share2, Save, Clock, Target,
   CheckCircle2, Circle, ChevronDown, ChevronRight, AlertCircle,
-  RotateCcw, ExternalLink, TrendingUp, Zap, BookOpen, Calendar
+  RotateCcw, ExternalLink, TrendingUp, Zap, BookOpen, Calendar,
+  Edit3, Plus, Trash2
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { generateRoadmap, replanRoadmap } from '../utils/roadmapAPI';
@@ -16,16 +17,23 @@ export default function RoadmapView() {
     selectedCareer, userProfile, activeRoadmap, setActiveRoadmap,
     savedRoadmaps, saveRoadmap, progress, toggleTask, getCareerProgress,
     isGenerating, setIsGenerating, generationError, setGenerationError,
-    notes, setNote,
+    notes, setNote, getAllCareers,
+    addPhaseToRoadmap, removePhaseFromRoadmap,
+    addTaskToRoadmapPhase, removeTaskFromRoadmapPhase,
   } = useStore();
 
   const [expandedPhase, setExpandedPhase] = useState(0);
   const [showReplan, setShowReplan] = useState(false);
   const [newTimeline, setNewTimeline] = useState(12);
   const [localNote, setLocalNote] = useState('');
+  const [builderMode, setBuilderMode] = useState(false);
+  const [showAddPhase, setShowAddPhase] = useState(false);
+  const [newPhaseTitle, setNewPhaseTitle] = useState('');
+  const [newPhaseDesc, setNewPhaseDesc] = useState('');
+  const [taskInputs, setTaskInputs] = useState({}); // { [phaseIdx]: { title: '', hours: 15 } }
 
-  // If no career selected, show picker
-  const career = selectedCareer || (activeRoadmap ? CAREER_NODES.find((c) => c.id === activeRoadmap.careerId) : null);
+  const allCareers = getAllCareers();
+  const career = selectedCareer || (activeRoadmap ? allCareers.find((c) => c.id === activeRoadmap.careerId) : null) || allCareers[0];
 
   useEffect(() => {
     if (career && notes[career.id]) setLocalNote(notes[career.id]);
@@ -57,6 +65,27 @@ export default function RoadmapView() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleAddManualPhase = (e) => {
+    e.preventDefault();
+    if (!newPhaseTitle.trim()) return;
+    addPhaseToRoadmap(newPhaseTitle.trim(), newPhaseDesc.trim() || 'Milestone phase focus');
+    setNewPhaseTitle('');
+    setNewPhaseDesc('');
+    setShowAddPhase(false);
+    toast.success('✨ New milestone phase added!');
+  };
+
+  const handleAddManualTask = (phaseIdx) => {
+    const input = taskInputs[phaseIdx];
+    if (!input || !input.title?.trim()) {
+      toast.error('Please enter a milestone title');
+      return;
+    }
+    addTaskToRoadmapPhase(phaseIdx, input.title.trim(), Number(input.hours) || 15);
+    setTaskInputs({ ...taskInputs, [phaseIdx]: { title: '', hours: 15 } });
+    toast.success('Added milestone task!');
   };
 
   const handleReplan = async () => {
@@ -157,6 +186,18 @@ export default function RoadmapView() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                id="roadmap-mode-toggle"
+                className={`btn btn-sm ${builderMode ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setBuilderMode(!builderMode)}
+                style={{
+                  border: builderMode ? '1px solid #7c3aed' : '1px solid rgba(124,58,237,0.3)',
+                  gap: 6,
+                }}
+              >
+                {builderMode ? <Sparkles size={14} /> : <Edit3 size={14} />}
+                {builderMode ? 'Switch to AI View' : '✍️ Edit Manually / Builder'}
+              </button>
               <button id="roadmap-replan" className="btn btn-ghost btn-sm" onClick={() => setShowReplan(!showReplan)}>
                 <RotateCcw size={14} /> Replan
               </button>
@@ -250,173 +291,384 @@ export default function RoadmapView() {
         {/* Roadmap Content */}
         {!isGenerating && activeRoadmap && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {/* AI Summary Card */}
-            <motion.div
-              className="glass-card"
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              style={{
-                padding: 24, marginBottom: 24,
-                background: `linear-gradient(135deg, rgba(124,58,237,0.12) 0%, rgba(6,182,212,0.06) 100%)`,
-                borderColor: 'rgba(124,58,237,0.3)',
-              }}
-            >
-              <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-                <Sparkles size={20} color="#c4b5fd" />
-                <span style={{ fontWeight: 700, fontFamily: 'var(--font-display)', fontSize: '1rem' }}>AI Insights</span>
-                <span className="badge badge-primary" style={{ marginLeft: 'auto' }}>Skill Match: {activeRoadmap.skillMatch}%</span>
-              </div>
-              <p style={{ color: 'var(--color-text-secondary)', lineHeight: 1.7, fontSize: '0.9rem' }}>{activeRoadmap.aiSummary}</p>
+            {builderMode ? (
+              /* ================= MANUAL / CUSTOM ROADMAP BUILDER ================= */
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{
+                  background: 'rgba(124, 58, 237, 0.08)',
+                  border: '1.5px dashed rgba(124, 58, 237, 0.4)',
+                  borderRadius: 18,
+                  padding: 24,
+                  marginBottom: 28,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      ✍️ Manual Roadmap Builder
+                    </h3>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
+                      Create and customize your milestones manually. Check off tasks to track progress in real-time.
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => setShowAddPhase(true)}
+                      style={{ gap: 6 }}
+                    >
+                      <Plus size={15} /> + Add Phase
+                    </button>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={handleSave}
+                      style={{ gap: 6 }}
+                    >
+                      <Save size={15} /> Save Roadmap
+                    </button>
+                  </div>
+                </div>
 
-              {/* Recommendations */}
-              {activeRoadmap.recommendations && (
-                <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {activeRoadmap.recommendations.map((rec, i) => (
-                    <div key={i} style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', padding: '6px 0', borderTop: i === 0 ? '1px solid rgba(255,255,255,0.06)' : 'none', paddingTop: i === 0 ? 12 : undefined }}>
-                      {rec}
+                {/* List of Phases to Edit */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {activeRoadmap?.phases?.map((phase, pIdx) => (
+                    <div
+                      key={pIdx}
+                      style={{
+                        background: 'rgba(16, 12, 38, 0.85)',
+                        border: '1px solid rgba(124, 58, 237, 0.25)',
+                        borderRadius: 14,
+                        padding: '18px 20px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{
+                            padding: '3px 8px', borderRadius: 6,
+                            background: 'rgba(124, 58, 237, 0.3)', color: '#c4b5fd',
+                            fontSize: '0.75rem', fontWeight: 700,
+                          }}>
+                            Phase {pIdx + 1}
+                          </span>
+                          <span style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>
+                            {phase.phase || phase.title}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                            ({phase.duration || '2 months'})
+                          </span>
+                        </div>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => removePhaseFromRoadmap(pIdx)}
+                          title="Delete Phase"
+                          style={{ color: '#f43f5e', padding: 6 }}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+
+                      {/* Tasks under this phase */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+                        {(phase.tasks || []).map((task, tIdx) => {
+                          const taskTitle = typeof task === 'object' ? task.title : task;
+                          const taskHours = typeof task === 'object' ? (task.hours || task.estimatedHours || 15) : 15;
+                          const isDone = !!progress[career.id]?.[pIdx]?.[tIdx];
+
+                          return (
+                            <div
+                              key={tIdx}
+                              style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                padding: '8px 12px', borderRadius: 8,
+                                background: isDone ? 'rgba(16, 185, 129, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+                                border: `1px solid ${isDone ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.05)'}`,
+                              }}
+                            >
+                              <div
+                                style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', flex: 1 }}
+                                onClick={() => toggleTask(career.id, pIdx, tIdx, taskTitle)}
+                              >
+                                {isDone
+                                  ? <CheckCircle2 size={16} color="#10b981" />
+                                  : <Circle size={16} color="var(--color-text-muted)" />
+                                }
+                                <span style={{
+                                  fontSize: '0.86rem',
+                                  color: isDone ? 'var(--color-text-muted)' : '#f0ecff',
+                                  textDecoration: isDone ? 'line-through' : 'none',
+                                }}>
+                                  {taskTitle}
+                                </span>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <span style={{ fontSize: '0.74rem', color: '#c4b5fd' }}>~{taskHours}h</span>
+                                <button
+                                  className="btn btn-ghost btn-sm"
+                                  onClick={() => removeTaskFromRoadmapPhase(pIdx, tIdx)}
+                                  style={{ padding: 4, color: 'var(--color-text-muted)' }}
+                                  title="Delete Task"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Add task quick row */}
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <input
+                          type="text"
+                          placeholder="Add new milestone task..."
+                          value={taskInputs[pIdx]?.title || ''}
+                          onChange={(e) => setTaskInputs({
+                            ...taskInputs,
+                            [pIdx]: { ...taskInputs[pIdx], title: e.target.value, hours: taskInputs[pIdx]?.hours || 15 }
+                          })}
+                          style={{
+                            flex: 1, padding: '7px 12px',
+                            background: 'rgba(255, 255, 255, 0.04)',
+                            border: '1px solid rgba(124, 58, 237, 0.25)',
+                            borderRadius: 8, color: '#fff', fontSize: '0.82rem', outline: 'none',
+                          }}
+                        />
+                        <input
+                          type="number"
+                          placeholder="Hours"
+                          value={taskInputs[pIdx]?.hours || 15}
+                          onChange={(e) => setTaskInputs({
+                            ...taskInputs,
+                            [pIdx]: { ...taskInputs[pIdx], hours: e.target.value }
+                          })}
+                          style={{
+                            width: 70, padding: '7px 8px',
+                            background: 'rgba(255, 255, 255, 0.04)',
+                            border: '1px solid rgba(124, 58, 237, 0.25)',
+                            borderRadius: 8, color: '#fff', fontSize: '0.82rem', outline: 'none',
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => handleAddManualTask(pIdx)}
+                          style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+                        >
+                          <Plus size={13} /> Add
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
-              )}
-            </motion.div>
+
+                {/* Add Phase Form */}
+                {showAddPhase && (
+                  <motion.form
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    onSubmit={handleAddManualPhase}
+                    style={{
+                      marginTop: 16, padding: 18, borderRadius: 12,
+                      background: 'rgba(124, 58, 237, 0.15)',
+                      border: '1px solid rgba(124, 58, 237, 0.35)',
+                      display: 'flex', flexDirection: 'column', gap: 10,
+                    }}
+                  >
+                    <h4 style={{ fontSize: '0.92rem', fontWeight: 700, color: '#fff' }}>+ New Milestone Phase</h4>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Phase Title (e.g. Advanced System Architecture)"
+                      value={newPhaseTitle}
+                      onChange={(e) => setNewPhaseTitle(e.target.value)}
+                      style={{
+                        padding: '8px 12px', background: '#120d2b',
+                        border: '1px solid rgba(124, 58, 237, 0.3)',
+                        borderRadius: 8, color: '#fff', fontSize: '0.84rem', outline: 'none',
+                      }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Duration & description (e.g. 2 months · Deep dive into scale)"
+                      value={newPhaseDesc}
+                      onChange={(e) => setNewPhaseDesc(e.target.value)}
+                      style={{
+                        padding: '8px 12px', background: '#120d2b',
+                        border: '1px solid rgba(124, 58, 237, 0.3)',
+                        borderRadius: 8, color: '#fff', fontSize: '0.84rem', outline: 'none',
+                      }}
+                    />
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowAddPhase(false)}>
+                        Cancel
+                      </button>
+                      <button type="submit" className="btn btn-primary btn-sm">
+                        Confirm Phase
+                      </button>
+                    </div>
+                  </motion.form>
+                )}
+              </motion.div>
+            ) : (
+              /* ================= AI GUIDED ROADMAP VIEW ================= */
+              <>
+                {/* AI Summary Card */}
+                <motion.div
+                  className="glass-card"
+                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                  style={{
+                    padding: 24, marginBottom: 24,
+                    background: `linear-gradient(135deg, rgba(124,58,237,0.12) 0%, rgba(6,182,212,0.06) 100%)`,
+                    borderColor: 'rgba(124,58,237,0.3)',
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+                    <Sparkles size={20} color="#c4b5fd" />
+                    <span style={{ fontWeight: 700, fontFamily: 'var(--font-display)', fontSize: '1rem' }}>AI Insights</span>
+                    <span className="badge badge-primary" style={{ marginLeft: 'auto' }}>Skill Match: {activeRoadmap.skillMatch}%</span>
+                  </div>
+                  <p style={{ color: 'var(--color-text-secondary)', lineHeight: 1.7, fontSize: '0.9rem' }}>{activeRoadmap.aiSummary}</p>
+
+                  {/* Recommendations */}
+                  {activeRoadmap.recommendations && (
+                    <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {activeRoadmap.recommendations.map((rec, i) => (
+                        <div key={i} style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', padding: '6px 0', borderTop: i === 0 ? '1px solid rgba(255,255,255,0.06)' : 'none', paddingTop: i === 0 ? 12 : undefined }}>
+                          {rec}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              </>
+            )}
 
             {/* Phases */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 28 }}>
-              {activeRoadmap.phases.map((phase, phaseIdx) => {
-                const careerProg = progress[career.id] || {};
-                const phaseProg = careerProg[phaseIdx] || {};
-                const completedTasks = phase.tasks.filter((_, tIdx) => phaseProg[tIdx]).length;
-                const phaseProgress = Math.round((completedTasks / phase.tasks.length) * 100);
-                const isExpanded = expandedPhase === phaseIdx;
+            {!builderMode && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 28 }}>
+                {activeRoadmap.phases.map((phase, phaseIdx) => {
+                  const careerProg = progress[career.id] || {};
+                  const phaseProg = careerProg[phaseIdx] || {};
+                  const completedTasks = phase.tasks.filter((_, tIdx) => phaseProg[tIdx]).length;
+                  const phaseProgress = Math.round((completedTasks / phase.tasks.length) * 100);
+                  const isExpanded = expandedPhase === phaseIdx;
 
-                return (
-                  <motion.div
-                    key={phaseIdx}
-                    className="glass-card"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: phaseIdx * 0.1 }}
-                    style={{ overflow: 'hidden' }}
-                  >
-                    {/* Phase header */}
-                    <div
-                      onClick={() => setExpandedPhase(isExpanded ? -1 : phaseIdx)}
-                      style={{
-                        padding: '20px 24px',
-                        cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', gap: 16,
-                        userSelect: 'none',
-                      }}
+                  return (
+                    <motion.div
+                      key={phaseIdx}
+                      className="glass-card"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: phaseIdx * 0.1 }}
+                      style={{ overflow: 'hidden' }}
                     >
-                      <div style={{
-                        width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-                        background: phaseProgress === 100 ? 'rgba(16,185,129,0.2)' : 'rgba(124,58,237,0.15)',
-                        border: `2px solid ${phaseProgress === 100 ? '#10b981' : career.color}`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '0.85rem', fontWeight: 700,
-                        color: phaseProgress === 100 ? '#10b981' : career.color,
-                      }}>
-                        {phaseProgress === 100 ? <CheckCircle2 size={18} /> : phaseIdx + 1}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.05rem' }}>Phase {phaseIdx + 1}: {phase.phase}</span>
-                          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <Clock size={12} /> {phase.duration}
-                            </span>
-                            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: phaseProgress === 100 ? '#10b981' : 'var(--color-primary-glow)' }}>{phaseProgress}%</span>
-                            {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                          </div>
+                      {/* Phase header */}
+                      <div
+                        onClick={() => setExpandedPhase(isExpanded ? -1 : phaseIdx)}
+                        style={{
+                          padding: '20px 24px',
+                          cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: 16,
+                          userSelect: 'none',
+                        }}
+                      >
+                        <div style={{
+                          width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+                          background: phaseProgress === 100 ? 'rgba(16,185,129,0.2)' : 'rgba(124,58,237,0.15)',
+                          border: `2px solid ${phaseProgress === 100 ? '#10b981' : career.color}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '0.85rem', fontWeight: 700,
+                          color: phaseProgress === 100 ? '#10b981' : career.color,
+                        }}>
+                          {phaseProgress === 100 ? <CheckCircle2 size={18} /> : phaseIdx + 1}
                         </div>
-                        <div className="progress-bar" style={{ height: 4 }}>
-                          <div className="progress-fill" style={{ width: `${phaseProgress}%`, background: phaseProgress === 100 ? 'var(--grad-emerald)' : 'var(--grad-primary)' }} />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Expanded phase body */}
-                    <AnimatePresence>
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          style={{ borderTop: '1px solid var(--color-border)', padding: '16px 24px 20px' }}
-                        >
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-                            {phase.tasks.map((task, taskIdx) => {
-                              const taskObj = typeof task === 'object' ? task : { title: task, priority: 'learn', estimatedHours: 15 };
-                              const isDone = !!phaseProg[taskIdx];
-                              return (
-                                <motion.div
-                                  key={taskIdx}
-                                  initial={{ opacity: 0, x: -10 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  transition={{ delay: taskIdx * 0.04 }}
-                                  onClick={() => toggleTask(career.id, phaseIdx, taskIdx)}
-                                  style={{
-                                    display: 'flex', gap: 12, alignItems: 'center',
-                                    padding: '10px 14px',
-                                    background: isDone ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.02)',
-                                    border: `1px solid ${isDone ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.05)'}`,
-                                    borderRadius: 10,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                  }}
-                                  onMouseEnter={(e) => { if (!isDone) e.currentTarget.style.background = 'rgba(124,58,237,0.06)'; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.background = isDone ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.02)'; }}
-                                >
-                                  {isDone
-                                    ? <CheckCircle2 size={18} color="#10b981" style={{ flexShrink: 0 }} />
-                                    : <Circle size={18} color="var(--color-text-muted)" style={{ flexShrink: 0 }} />
-                                  }
-                                  <div style={{ flex: 1 }}>
-                                    <span style={{
-                                      fontSize: '0.88rem',
-                                      color: isDone ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
-                                      textDecoration: isDone ? 'line-through' : 'none',
-                                      fontWeight: isDone ? 400 : 500,
-                                    }}>{taskObj.title || taskObj}</span>
-                                  </div>
-                                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-                                    {taskObj.priority && (
-                                      <span className={`badge ${taskObj.priority === 'review' ? 'badge-gold' : 'badge-primary'}`} style={{ fontSize: '0.65rem' }}>
-                                        {taskObj.priority}
-                                      </span>
-                                    )}
-                                    {taskObj.estimatedHours && (
-                                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>~{taskObj.estimatedHours}h</span>
-                                    )}
-                                  </div>
-                                </motion.div>
-                              );
-                            })}
-                          </div>
-
-                          {/* Phase resources */}
-                          {phase.resources && phase.resources.length > 0 && (
-                            <div>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Resources for this phase</div>
-                              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                {phase.resources.map((res, i) => (
-                                  <a key={i} href={res.url} target="_blank" rel="noopener noreferrer"
-                                    className="btn btn-ghost btn-sm"
-                                    style={{ gap: 6, fontSize: '0.78rem' }}
-                                  >
-                                    <ExternalLink size={12} /> {res.title}
-                                  </a>
-                                ))}
-                              </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.05rem' }}>Phase {phaseIdx + 1}: {phase.phase || phase.title}</span>
+                            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <Clock size={12} /> {phase.duration || '2 months'}
+                              </span>
+                              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: phaseProgress === 100 ? '#10b981' : 'var(--color-primary-glow)' }}>{phaseProgress}%</span>
+                              {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                             </div>
-                          )}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                );
-              })}
-            </div>
+                          </div>
+                          <div className="progress-bar" style={{ height: 4 }}>
+                            <div className="progress-fill" style={{ width: `${phaseProgress}%`, background: phaseProgress === 100 ? 'var(--grad-emerald)' : 'var(--grad-primary)' }} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Expanded phase body */}
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            style={{ borderTop: '1px solid var(--color-border)', padding: '16px 24px 20px' }}
+                          >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+                              {phase.tasks.map((task, taskIdx) => {
+                                const taskObj = typeof task === 'object' ? task : { title: task, priority: 'learn', estimatedHours: 15 };
+                                const isDone = !!phaseProg[taskIdx];
+                                return (
+                                  <motion.div
+                                    key={taskIdx}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: taskIdx * 0.04 }}
+                                    onClick={() => toggleTask(career.id, phaseIdx, taskIdx, taskObj.title || taskObj)}
+                                    style={{
+                                      display: 'flex', gap: 12, alignItems: 'center',
+                                      padding: '10px 14px',
+                                      background: isDone ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.02)',
+                                      border: `1px solid ${isDone ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.05)'}`,
+                                      borderRadius: 10,
+                                      cursor: 'pointer',
+                                      transition: 'all 0.2s',
+                                    }}
+                                    onMouseEnter={(e) => { if (!isDone) e.currentTarget.style.background = 'rgba(124,58,237,0.06)'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = isDone ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.02)'; }}
+                                  >
+                                    {isDone
+                                      ? <CheckCircle2 size={18} color="#10b981" style={{ flexShrink: 0 }} />
+                                      : <Circle size={18} color="var(--color-text-muted)" style={{ flexShrink: 0 }} />
+                                    }
+                                    <div style={{ flex: 1 }}>
+                                      <span style={{
+                                        fontSize: '0.88rem',
+                                        color: isDone ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
+                                        textDecoration: isDone ? 'line-through' : 'none',
+                                        fontWeight: isDone ? 400 : 500,
+                                      }}>{taskObj.title || taskObj}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                                      {taskObj.priority && (
+                                        <span className={`badge ${taskObj.priority === 'review' ? 'badge-gold' : 'badge-primary'}`} style={{ fontSize: '0.65rem' }}>
+                                          {taskObj.priority}
+                                        </span>
+                                      )}
+                                      {taskObj.estimatedHours && (
+                                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>~{taskObj.estimatedHours}h</span>
+                                      )}
+                                    </div>
+                                  </motion.div>
+                                );
+                              })}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Weekly Plan */}
             {activeRoadmap.weeklyPlan && (

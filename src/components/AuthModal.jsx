@@ -6,12 +6,13 @@ import useStore from '../store/useStore';
 import { CAREER_NODES } from '../data/careers';
 
 export default function AuthModal() {
-  const { authModalOpen, authModalMode, closeAuthModal, openAuthModal, login, register, loginAsGuest } = useStore();
+  const { authModalOpen, authModalMode, closeAuthModal, openAuthModal, login, register, loginAsGuest, addCustomCareer } = useStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [targetRole, setTargetRole] = useState('ai-engineer');
+  const [customRole, setCustomRole] = useState('');
   const [loading, setLoading] = useState(false);
 
   if (!authModalOpen) return null;
@@ -41,7 +42,19 @@ export default function AuthModal() {
           setLoading(false);
           return;
         }
-        const res = await register(name, email, password, targetRole);
+
+        let effectiveRole = targetRole;
+        if (targetRole === 'other') {
+          if (!customRole.trim()) {
+            toast.error('Please specify your custom career title');
+            setLoading(false);
+            return;
+          }
+          const created = addCustomCareer({ title: customRole.trim() });
+          effectiveRole = created.id;
+        }
+
+        const res = await register(name, email, password, effectiveRole);
         if (res.success) {
           toast.success('Cosmic account initialized! Welcome aboard.');
         } else {
@@ -334,6 +347,7 @@ export default function AuthModal() {
                     color: '#fff',
                     fontSize: '0.85rem',
                     outline: 'none',
+                    marginBottom: targetRole === 'other' ? 10 : 0,
                   }}
                 >
                   {CAREER_NODES.map((career) => (
@@ -341,7 +355,39 @@ export default function AuthModal() {
                       {career.title} ({career.cluster})
                     </option>
                   ))}
+                  <option value="other" style={{ background: '#120d2b', color: '#67e8f9', fontWeight: 'bold' }}>
+                    ✨ Other (Write your own career path...)
+                  </option>
                 </select>
+
+                {targetRole === 'other' && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    style={{ marginTop: 8 }}
+                  >
+                    <label style={{ display: 'block', fontSize: '0.76rem', color: '#a78bfa', marginBottom: 4 }}>
+                      Specify Custom Career Title
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Robotics Engineer, Game Architect, BioTech Dev..."
+                      value={customRole}
+                      onChange={(e) => setCustomRole(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        background: 'rgba(124, 58, 237, 0.1)',
+                        border: '1px solid rgba(6, 182, 212, 0.4)',
+                        borderRadius: 10,
+                        color: '#fff',
+                        fontSize: '0.86rem',
+                        outline: 'none',
+                      }}
+                    />
+                  </motion.div>
+                )}
               </div>
             )}
 

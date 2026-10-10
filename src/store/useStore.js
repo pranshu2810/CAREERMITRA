@@ -26,18 +26,138 @@ const useStore = create(
       },
       clearCompare: () => set({ comparedCareers: [] }),
 
+      // ── Custom Careers (User Defined) ──
+      customCareers: [],
+      addCustomCareer: (careerData) => {
+        const id = `custom-${Date.now()}`;
+        const newCareer = {
+          id,
+          title: careerData.title || 'Custom Role',
+          cluster: careerData.cluster || 'Emerging Tech',
+          icon: careerData.icon || '🚀',
+          color: careerData.color || '#ec4899',
+          tagline: careerData.tagline || 'Customized career trajectory',
+          salaryRange: careerData.salaryRange || '$90k - $160k',
+          demand: careerData.demand || 'High',
+          growthRate: careerData.growthRate || '+25%',
+          avgMonths: careerData.avgMonths || 6,
+          skills: careerData.skills || ['Core Fundamentals', 'Domain Principles', 'Applied Practice'],
+          radarStats: careerData.radarStats || { math: 65, coding: 75, systems: 70, mlCore: 60, cloud: 65, product: 70 },
+          roadmapPhases: careerData.roadmapPhases || [
+            {
+              title: 'Phase 1: Core Fundamentals',
+              desc: 'Initial foundations and toolset',
+              tasks: [
+                { title: 'Core Principles & Theory', hours: 20, status: 'available' },
+                { title: 'Practical Setup & Environment', hours: 15, status: 'available' },
+              ],
+            },
+            {
+              title: 'Phase 2: Applied Projects',
+              desc: 'Hands-on portfolio work',
+              tasks: [
+                { title: 'Intermediate Project Implementation', hours: 30, status: 'available' },
+                { title: 'Portfolio Capstone Deliverable', hours: 25, status: 'available' },
+              ],
+            },
+          ],
+        };
+        const updated = [...get().customCareers, newCareer];
+        set({ customCareers: updated, selectedCareer: newCareer });
+        return newCareer;
+      },
+      getAllCareers: () => [...CAREER_NODES, ...(get().customCareers || [])],
+
       // ── Active Roadmap ──
-      activeRoadmap: null,       // { careerId, generatedAt, phases, aiSummary }
+      activeRoadmap: null,       // { careerId, generatedAt, phases, aiSummary, isManual }
       setActiveRoadmap: (roadmap) => set({ activeRoadmap: roadmap }),
 
-      // ── Progress Tracking ──
+      // Manual Roadmap Editing Actions
+      updateActiveRoadmap: (updater) => {
+        const { activeRoadmap } = get();
+        if (!activeRoadmap) return;
+        const updated = typeof updater === 'function' ? updater(activeRoadmap) : { ...activeRoadmap, ...updater };
+        set({ activeRoadmap: updated });
+      },
+      addPhaseToRoadmap: (phaseTitle = 'New Phase', phaseDesc = 'Milestone focus') => {
+        const { activeRoadmap } = get();
+        if (!activeRoadmap) return;
+        const newPhase = {
+          title: phaseTitle,
+          desc: phaseDesc,
+          tasks: [{ title: 'First Milestone Task', hours: 15, status: 'available' }],
+        };
+        const updatedPhases = [...(activeRoadmap.phases || []), newPhase];
+        set({ activeRoadmap: { ...activeRoadmap, phases: updatedPhases } });
+      },
+      removePhaseFromRoadmap: (phaseIndex) => {
+        const { activeRoadmap } = get();
+        if (!activeRoadmap || !activeRoadmap.phases) return;
+        const updatedPhases = activeRoadmap.phases.filter((_, i) => i !== phaseIndex);
+        set({ activeRoadmap: { ...activeRoadmap, phases: updatedPhases } });
+      },
+      addTaskToRoadmapPhase: (phaseIndex, taskTitle = 'New Task', hours = 15) => {
+        const { activeRoadmap } = get();
+        if (!activeRoadmap || !activeRoadmap.phases?.[phaseIndex]) return;
+        const phases = JSON.parse(JSON.stringify(activeRoadmap.phases));
+        phases[phaseIndex].tasks.push({ title: taskTitle, hours, status: 'available' });
+        set({ activeRoadmap: { ...activeRoadmap, phases } });
+      },
+      removeTaskFromRoadmapPhase: (phaseIndex, taskIndex) => {
+        const { activeRoadmap } = get();
+        if (!activeRoadmap || !activeRoadmap.phases?.[phaseIndex]) return;
+        const phases = JSON.parse(JSON.stringify(activeRoadmap.phases));
+        phases[phaseIndex].tasks.splice(taskIndex, 1);
+        set({ activeRoadmap: { ...activeRoadmap, phases } });
+      },
+
+      // ── Progress Tracking & Real-Time Activity Log ──
       // { [careerId]: { [phaseIndex]: { [taskIndex]: boolean } } }
       progress: {},
-      toggleTask: (careerId, phaseIndex, taskIndex) => {
-        const { progress } = get();
+      activityHistory: [], // Real timestamps of completed milestones [{ careerId, phaseIndex, taskIndex, taskTitle, timestamp }]
+
+      toggleTask: (careerId, phaseIndex, taskIndex, taskTitle = 'Milestone') => {
+        const { progress, activityHistory, user } = get();
         const careerProgress = progress[careerId] || {};
         const phaseProgress = careerProgress[phaseIndex] || {};
         const current = phaseProgress[taskIndex] || false;
+        const nextState = !current;
+
+        // Record real activity log
+        let updatedHistory = [...(activityHistory || [])];
+        if (nextState) {
+          updatedHistory.unshift({
+            id: `act-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+            careerId,
+            phaseIndex,
+            taskIndex,
+            taskTitle,
+            timestamp: new Date().toISOString(),
+          });
+        } else {
+          updatedHistory = updatedHistory.filter(
+            (a) => !(a.careerId === careerId && a.phaseIndex === phaseIndex && a.taskIndex === taskIndex)
+          );
+        }
+
+        // Live calculate XP
+        const totalCompletedAcrossAll = Object.values({
+          ...progress,
+          [careerId]: {
+            ...careerProgress,
+            [phaseIndex]: {
+              ...phaseProgress,
+              [taskIndex]: nextState,
+            },
+          },
+        }).reduce((acc, cp) => {
+          return acc + Object.values(cp).reduce((pAcc, pp) => {
+            return pAcc + Object.values(pp).filter(Boolean).length;
+          }, 0);
+        }, 0);
+
+        const newXP = totalCompletedAcrossAll * 50;
+        const newLevel = Math.floor(newXP / 200) + 1;
 
         set({
           progress: {
@@ -46,22 +166,34 @@ const useStore = create(
               ...careerProgress,
               [phaseIndex]: {
                 ...phaseProgress,
-                [taskIndex]: !current,
+                [taskIndex]: nextState,
               },
             },
           },
+          activityHistory: updatedHistory,
+          user: user ? { ...user, xp: newXP, level: newLevel } : user,
         });
       },
 
       getCareerProgress: (careerId) => {
-        const { progress } = get();
-        const career = CAREER_NODES.find((c) => c.id === careerId);
-        if (!career) return 0;
+        const { progress, activeRoadmap, savedRoadmaps } = get();
+        const allCareers = get().getAllCareers();
+        const career = allCareers.find((c) => c.id === careerId);
+
+        // Find phases from career node or active/saved roadmap
+        let phases = career?.roadmapPhases;
+        if (!phases) {
+          const r = (activeRoadmap?.careerId === careerId ? activeRoadmap : null) ||
+                    savedRoadmaps.find((s) => s.careerId === careerId);
+          phases = r?.phases;
+        }
+
+        if (!phases || phases.length === 0) return 0;
         const careerProgress = progress[careerId] || {};
         let total = 0;
         let done = 0;
-        career.roadmapPhases.forEach((phase, pIdx) => {
-          phase.tasks.forEach((_, tIdx) => {
+        phases.forEach((phase, pIdx) => {
+          (phase.tasks || []).forEach((_, tIdx) => {
             total++;
             if (careerProgress[pIdx]?.[tIdx]) done++;
           });
@@ -230,6 +362,8 @@ const useStore = create(
         token: state.token,
         isAuthenticated: state.isAuthenticated,
         isGuest: state.isGuest,
+        customCareers: state.customCareers,
+        activityHistory: state.activityHistory,
         userProfile: state.userProfile,
         progress: state.progress,
         savedRoadmaps: state.savedRoadmaps,

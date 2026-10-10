@@ -57,5 +57,19 @@
     "level": 1,
     "savedRoadmaps": [],
     "createdAt": "2026-10-10T06:39:56.632Z"
+  },
+  {
+    "id": "user-1791615959697-24tpa7",
+    "name": "Cosmic Tester",
+    "email": "test-1791615959609@test.com",
+    "passwordHash": "$2b$10$rjphGbRfLmEwQnjfARgDnOvzWTpu7x1Hs4kh9HWGKFYXShjxhw4dG",
+    "targetRole": "ai-engineer",
+    "skills": [],
+    "weeklyHours": 15,
+    "targetMonths": 6,
+    "xp": 100,
+    "level": 1,
+    "savedRoadmaps": [],
+    "createdAt": "2026-10-10T07:05:59.697Z"
   }
 ]

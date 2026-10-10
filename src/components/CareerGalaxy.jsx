@@ -23,10 +23,20 @@ const NODE_POS = {
 };
 
 export default function CareerGalaxy() {
-  const { galaxyFilter, setGalaxyFilter, searchQuery, setSearchQuery, comparedCareers, toggleCompare, setActiveView, setSelectedCareer } = useStore();
+  const {
+    galaxyFilter, setGalaxyFilter, searchQuery, setSearchQuery,
+    comparedCareers, toggleCompare, setActiveView, setSelectedCareer,
+    getAllCareers, addCustomCareer
+  } = useStore();
   const [hoveredNode, setHoveredNode] = useState(null);
   const [detailCareer, setDetailCareer] = useState(null);
   const [animated, setAnimated] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newCategory, setNewCategory] = useState('engineering');
+  const [newSalary, setNewSalary] = useState('$100k - $160k');
+  const [newSkills, setNewSkills] = useState('');
+  const [newMonths, setNewMonths] = useState(6);
   const svgRef = useRef(null);
 
   useEffect(() => {
@@ -34,11 +44,15 @@ export default function CareerGalaxy() {
     return () => clearTimeout(t);
   }, []);
 
-  const filteredIds = CAREER_NODES.filter((c) => {
+  const allCareers = getAllCareers();
+
+  const filteredCareers = allCareers.filter((c) => {
     const matchCat = galaxyFilter === 'all' || c.category === galaxyFilter;
-    const matchSearch = !searchQuery || c.title.toLowerCase().includes(searchQuery.toLowerCase()) || c.skills.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchSearch = !searchQuery || c.title.toLowerCase().includes(searchQuery.toLowerCase()) || (c.skills || []).some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchCat && matchSearch;
-  }).map((c) => c.id);
+  });
+
+  const filteredIds = filteredCareers.map((c) => c.id);
 
   const handleNodeClick = useCallback((career) => {
     setDetailCareer(career);
@@ -48,6 +62,33 @@ export default function CareerGalaxy() {
   const handleGenerateRoadmap = (career) => {
     setSelectedCareer(career);
     setDetailCareer(null);
+    setActiveView('roadmap');
+  };
+
+  const handleCreateCustomCareer = (e) => {
+    e.preventDefault();
+    if (!newTitle.trim()) return;
+
+    const skillList = newSkills.trim()
+      ? newSkills.split(',').map((s) => s.trim()).filter(Boolean)
+      : ['Core Fundamentals', 'Domain Principles', 'Applied Practice'];
+
+    const created = addCustomCareer({
+      title: newTitle.trim(),
+      cluster: newCategory.toUpperCase(),
+      category: newCategory,
+      salaryRange: newSalary,
+      avgSalary: newSalary,
+      demand: 'High',
+      growthRate: '+30%',
+      avgMonths: Number(newMonths) || 6,
+      skills: skillList,
+    });
+
+    setShowAddModal(false);
+    setNewTitle('');
+    setNewSkills('');
+    setSelectedCareer(created);
     setActiveView('roadmap');
   };
 
@@ -109,6 +150,22 @@ export default function CareerGalaxy() {
                 {cat.icon} {cat.label}
               </motion.button>
             ))}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              id="btn-add-custom-career"
+              className="btn btn-sm"
+              onClick={() => setShowAddModal(true)}
+              style={{
+                background: 'linear-gradient(135deg, rgba(236,72,153,0.3) 0%, rgba(124,58,237,0.3) 100%)',
+                border: '1px solid rgba(236,72,153,0.5)',
+                color: '#fbcfe8',
+                fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <Plus size={14} /> + Add Other Career
+            </motion.button>
           </div>
         </motion.div>
 
@@ -313,7 +370,7 @@ export default function CareerGalaxy() {
       {/* Career Cards Grid below galaxy */}
       <div className="container" style={{ paddingBottom: 60 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 20 }}>
-          {CAREER_NODES.filter((c) => filteredIds.includes(c.id)).map((career, idx) => (
+          {filteredCareers.map((career, idx) => (
             <CareerCard
               key={career.id}
               career={career}
@@ -337,6 +394,175 @@ export default function CareerGalaxy() {
             isCompared={comparedCareers.includes(detailCareer.id)}
             onToggleCompare={() => toggleCompare(detailCareer.id)}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Modal: Add Other / Custom Career */}
+      <AnimatePresence>
+        {showAddModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowAddModal(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 1000,
+              background: 'rgba(3, 2, 12, 0.82)',
+              backdropFilter: 'blur(16px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 20,
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.94, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.94, opacity: 0, y: 10 }}
+              onClick={(e) => e.stopPropagation()}
+              className="card card-glow"
+              style={{
+                width: '100%',
+                maxWidth: 480,
+                background: 'linear-gradient(135deg, rgba(16, 12, 38, 0.98) 0%, rgba(8, 6, 24, 0.99) 100%)',
+                border: '1px solid rgba(236, 72, 153, 0.4)',
+                borderRadius: 20,
+                padding: '30px 26px',
+                position: 'relative',
+              }}
+            >
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="btn btn-ghost btn-sm"
+                style={{ position: 'absolute', top: 16, right: 16, padding: 6, borderRadius: '50%' }}
+              >
+                <X size={18} />
+              </button>
+
+              <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #ec4899, #7c3aed)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 22, margin: '0 auto 10px',
+                  boxShadow: '0 0 20px rgba(236,72,153,0.5)',
+                }}>
+                  ✨
+                </div>
+                <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--font-display)' }}>
+                  Add Custom Career Constellation
+                </h2>
+                <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+                  Define your own custom career path and generate or build its roadmap.
+                </p>
+              </div>
+
+              <form onSubmit={handleCreateCustomCareer} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: 6 }}>
+                    Career Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Game Developer, Robotics Specialist, Quant Analyst"
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    style={{
+                      width: '100%', padding: '10px 12px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(124, 58, 237, 0.3)',
+                      borderRadius: 10, color: '#fff', fontSize: '0.88rem', outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: 6 }}>
+                      Domain Category
+                    </label>
+                    <select
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      style={{
+                        width: '100%', padding: '10px 12px',
+                        background: '#120d2b', border: '1px solid rgba(124, 58, 237, 0.3)',
+                        borderRadius: 10, color: '#fff', fontSize: '0.85rem', outline: 'none',
+                      }}
+                    >
+                      <option value="engineering">Engineering</option>
+                      <option value="data-ai">Data & AI</option>
+                      <option value="design">Design</option>
+                      <option value="product">Product</option>
+                      <option value="security">Security</option>
+                      <option value="other">Emerging Tech</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: 6 }}>
+                      Target Timeline (Months)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={24}
+                      value={newMonths}
+                      onChange={(e) => setNewMonths(e.target.value)}
+                      style={{
+                        width: '100%', padding: '10px 12px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(124, 58, 237, 0.3)',
+                        borderRadius: 10, color: '#fff', fontSize: '0.88rem', outline: 'none',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: 6 }}>
+                    Key Skills (comma separated)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. C++, Unreal Engine, Physics Simulation, Linear Algebra"
+                    value={newSkills}
+                    onChange={(e) => setNewSkills(e.target.value)}
+                    style={{
+                      width: '100%', padding: '10px 12px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(124, 58, 237, 0.3)',
+                      borderRadius: 10, color: '#fff', fontSize: '0.88rem', outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="btn btn-ghost"
+                    style={{ flex: 1 }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    style={{
+                      flex: 1,
+                      background: 'linear-gradient(135deg, #ec4899, #7c3aed)',
+                      fontWeight: 700,
+                    }}
+                  >
+                    Create & Launch 🚀
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
