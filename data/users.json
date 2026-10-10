@@ -71,5 +71,33 @@
     "level": 1,
     "savedRoadmaps": [],
     "createdAt": "2026-10-10T07:05:59.697Z"
+  },
+  {
+    "id": "user-1791616132136-7tbjux",
+    "name": "parv",
+    "email": "rastogiparv480@gmail.com",
+    "passwordHash": "$2b$10$wD5QyeLI0PGw0.9KaKKeheNAUm5D6jjWcOiYO4gPNiDiKzSxYyqJW",
+    "targetRole": "custom-1791616131933",
+    "skills": [],
+    "weeklyHours": 15,
+    "targetMonths": 6,
+    "xp": 100,
+    "level": 1,
+    "savedRoadmaps": [],
+    "createdAt": "2026-10-10T07:08:52.136Z"
+  },
+  {
+    "id": "user-1791616810147-4yjujx",
+    "name": "Cosmic Tester",
+    "email": "test-1791616810040@test.com",
+    "passwordHash": "$2b$10$QDoZj2yn.j9dBakAbIjBMOqHuQXy8pOxwhp8HKAWN35y9X2eVpumG",
+    "targetRole": "ai-engineer",
+    "skills": [],
+    "weeklyHours": 15,
+    "targetMonths": 6,
+    "xp": 100,
+    "level": 1,
+    "savedRoadmaps": [],
+    "createdAt": "2026-10-10T07:20:10.147Z"
   }
 ]

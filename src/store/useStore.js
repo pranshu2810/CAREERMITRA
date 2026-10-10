@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { CAREER_NODES } from '../data/careers';
+import { CAREER_NODES } from '../data/careers.js';
+import { synthesizeCareerBlueprint } from '../utils/blueprintSynthesizer.js';
 
 // ── Zustand Store with localStorage persistence ──
 const useStore = create(
@@ -30,37 +31,26 @@ const useStore = create(
       customCareers: [],
       addCustomCareer: (careerData) => {
         const id = `custom-${Date.now()}`;
+        const blueprint = synthesizeCareerBlueprint(careerData.title || 'Custom Role');
         const newCareer = {
+          ...blueprint,
           id,
-          title: careerData.title || 'Custom Role',
-          cluster: careerData.cluster || 'Emerging Tech',
-          icon: careerData.icon || '🚀',
-          color: careerData.color || '#ec4899',
-          tagline: careerData.tagline || 'Customized career trajectory',
-          salaryRange: careerData.salaryRange || '$90k - $160k',
-          demand: careerData.demand || 'High',
-          growthRate: careerData.growthRate || '+25%',
-          avgMonths: careerData.avgMonths || 6,
-          skills: careerData.skills || ['Core Fundamentals', 'Domain Principles', 'Applied Practice'],
-          radarStats: careerData.radarStats || { math: 65, coding: 75, systems: 70, mlCore: 60, cloud: 65, product: 70 },
-          roadmapPhases: careerData.roadmapPhases || [
-            {
-              title: 'Phase 1: Core Fundamentals',
-              desc: 'Initial foundations and toolset',
-              tasks: [
-                { title: 'Core Principles & Theory', hours: 20, status: 'available' },
-                { title: 'Practical Setup & Environment', hours: 15, status: 'available' },
-              ],
-            },
-            {
-              title: 'Phase 2: Applied Projects',
-              desc: 'Hands-on portfolio work',
-              tasks: [
-                { title: 'Intermediate Project Implementation', hours: 30, status: 'available' },
-                { title: 'Portfolio Capstone Deliverable', hours: 25, status: 'available' },
-              ],
-            },
-          ],
+          title: careerData.title || blueprint.title,
+          cluster: careerData.cluster || blueprint.cluster,
+          category: careerData.category || blueprint.category,
+          icon: careerData.icon || blueprint.icon,
+          color: careerData.color || blueprint.color,
+          glowColor: careerData.glowColor || blueprint.glowColor,
+          tagline: careerData.tagline || blueprint.tagline,
+          salaryRange: careerData.salaryRange || blueprint.salaryRange,
+          avgSalary: careerData.avgSalary || careerData.salaryRange || blueprint.avgSalary,
+          demand: careerData.demand || blueprint.demand,
+          growthRate: careerData.growthRate || blueprint.growthRate,
+          avgMonths: careerData.avgMonths || blueprint.avgMonths,
+          skills: careerData.skills || blueprint.skills,
+          radarStats: careerData.radarStats || blueprint.radarStats,
+          roadmapPhases: careerData.roadmapPhases || blueprint.roadmapPhases,
+          resources: careerData.resources || blueprint.resources,
         };
         const updated = [...get().customCareers, newCareer];
         set({ customCareers: updated, selectedCareer: newCareer });

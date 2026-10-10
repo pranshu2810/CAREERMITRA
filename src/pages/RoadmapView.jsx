@@ -53,6 +53,7 @@ export default function RoadmapView() {
     try {
       const roadmap = await generateRoadmap({
         careerId: career.id,
+        career,
         userProfile,
         existingSkills: userProfile?.skills || [],
         timelineMonths: userProfile?.timelineMonths || 12,
@@ -289,7 +290,7 @@ export default function RoadmapView() {
         )}
 
         {/* Roadmap Content */}
-        {!isGenerating && activeRoadmap && (
+        {!isGenerating && activeRoadmap && activeRoadmap.careerId === career?.id && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             {builderMode ? (
               /* ================= MANUAL / CUSTOM ROADMAP BUILDER ================= */

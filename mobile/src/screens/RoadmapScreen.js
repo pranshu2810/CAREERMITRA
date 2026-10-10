@@ -35,7 +35,19 @@ const DEFAULT_ROADMAP_PHASES = [
 ];
 
 export default function RoadmapScreen({ career, onBack }) {
-  const [phases, setPhases] = useState(DEFAULT_ROADMAP_PHASES);
+  const initialPhases = (career?.roadmapPhases && career.roadmapPhases.length)
+    ? career.roadmapPhases.map((p, pIdx) => ({
+        phase: p.phase || p.title || `Phase ${pIdx + 1}`,
+        skills: (p.tasks || []).map((t, tIdx) => ({
+          id: `task-${pIdx}-${tIdx}`,
+          title: typeof t === 'object' ? t.title : String(t),
+          hours: typeof t === 'object' ? (t.hours || 20) : 20,
+          status: tIdx === 0 && pIdx === 0 ? 'completed' : 'available',
+        })),
+      }))
+    : DEFAULT_ROADMAP_PHASES;
+
+  const [phases, setPhases] = useState(initialPhases);
 
   const toggleSkill = (phaseIdx, skillIdx) => {
     const updated = JSON.parse(JSON.stringify(phases));
