@@ -91,6 +91,35 @@ async function runTests() {
     assert(comp.data.comparison.metrics.overlapPercent >= 0, 'Computes overlap percentage');
     assert(comp.data.comparison.careerA.radarStats !== undefined, 'Includes radar stats for Career A');
 
+    // 7. Auth Endpoints: Guest Login
+    console.log('\n[Test 7] Auth Guest Login');
+    const guest = await request('/api/auth/guest', { method: 'POST' });
+    assert(guest.status === 200, 'Guest login responds with 200 OK');
+    assert(guest.data.token !== undefined, 'Returns JWT token for guest');
+    assert(guest.data.user.isGuest === true, 'Identifies user as guest');
+
+    // 8. Auth Endpoints: Register & Profile
+    console.log('\n[Test 8] Auth Register & Me Endpoint');
+    const testEmail = `test-${Date.now()}@test.com`;
+    const reg = await request('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Cosmic Tester',
+        email: testEmail,
+        password: 'securePassword123!',
+        targetRole: 'ai-engineer'
+      })
+    });
+    assert(reg.status === 201, 'Registration responds with 201 Created');
+    assert(reg.data.token !== undefined, 'Returns JWT token upon registration');
+
+    const me = await request('/api/auth/me', {
+      headers: { 'Authorization': `Bearer ${reg.data.token}` }
+    });
+    assert(me.status === 200, '/api/auth/me responds with 200 OK');
+    assert(me.data.user.email === testEmail, 'User profile matches registered email');
+
   } catch (err) {
     console.error('Test execution error:', err);
     failed++;

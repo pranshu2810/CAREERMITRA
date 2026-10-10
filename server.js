@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { fileURLToPath } from 'url';
 import { careerClusters, defaultCareers } from './data/defaultBlueprints.js';
 
@@ -12,12 +15,227 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'careermitra_super_cosmic_jwt_secret_2026';
+const USERS_FILE = path.join(__dirname, 'data', 'users.json');
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 1. Get career clusters and all available roles
+// --- User Database Helpers ---
+function getUsers() {
+  try {
+    if (!fs.existsSync(USERS_FILE)) {
+      fs.writeFileSync(USERS_FILE, JSON.stringify([]), 'utf-8');
+      return [];
+    }
+    const data = fs.readFileSync(USERS_FILE, 'utf-8');
+    return JSON.parse(data || '[]');
+  } catch (e) {
+    console.error('Error reading users file:', e);
+    return [];
+  }
+}
+
+function saveUsers(users) {
+  try {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('Error writing users file:', e);
+  }
+}
+
+function sanitizeUser(user) {
+  if (!user) return null;
+  const { passwordHash, ...safeUser } = user;
+  return safeUser;
+}
+
+function generateToken(user) {
+  return jwt.sign(
+    { id: user.id, email: user.email, name: user.name },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+}
+
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ success: false, message: 'Authentication required' });
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(403).json({ success: false, message: 'Invalid or expired token' });
+    req.user = decoded;
+    next();
+  });
+}
+
+// ================= AUTHENTICATION ENDPOINTS =================
+
+// Register new user
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, email, password, targetRole = 'ai-engineer', skills = [] } = req.body;
+    if (!email || !password || !name) {
+      return res.status(400).json({ success: false, message: 'Name, email and password are required' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const users = getUsers();
+    if (users.some(u => u.email.toLowerCase() === cleanEmail)) {
+      return res.status(400).json({ success: false, message: 'An account with this email already exists' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const newUser = {
+      id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      name: name.trim(),
+      email: cleanEmail,
+      passwordHash,
+      targetRole,
+      skills: Array.isArray(skills) ? skills : [],
+      weeklyHours: 15,
+      targetMonths: 6,
+      xp: 100,
+      level: 1,
+      savedRoadmaps: [],
+      createdAt: new Date().toISOString()
+    };
+
+    users.push(newUser);
+    saveUsers(users);
+
+    const token = generateToken(newUser);
+    res.status(201).json({
+      success: true,
+      token,
+      user: sanitizeUser(newUser),
+      message: 'Registration successful'
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ success: false, message: 'Internal server error during registration' });
+  }
+});
+
+// Login existing user
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const users = getUsers();
+    const user = users.find(u => u.email.toLowerCase() === cleanEmail);
+
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    }
+
+    // Support demo user fallback if password is "demo123"
+    let valid = false;
+    if (cleanEmail === 'demo@careermitra.ai' && password === 'demo123') {
+      valid = true;
+    } else {
+      valid = await bcrypt.compare(password, user.passwordHash);
+    }
+
+    if (!valid) {
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    }
+
+    const token = generateToken(user);
+    res.json({
+      success: true,
+      token,
+      user: sanitizeUser(user),
+      message: 'Login successful'
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ success: false, message: 'Internal server error during login' });
+  }
+});
+
+// Guest / Demo instant login
+app.post('/api/auth/guest', (req, res) => {
+  try {
+    const guestUser = {
+      id: `guest-${Date.now()}`,
+      name: 'Cosmic Explorer (Guest)',
+      email: `guest-${Math.random().toString(36).substr(2, 6)}@careermitra.ai`,
+      isGuest: true,
+      targetRole: 'ai-engineer',
+      skills: ['Python', 'JavaScript', 'SQL'],
+      weeklyHours: 15,
+      targetMonths: 6,
+      xp: 250,
+      level: 2,
+      savedRoadmaps: [],
+      createdAt: new Date().toISOString()
+    };
+
+    const token = generateToken(guestUser);
+    res.json({
+      success: true,
+      token,
+      user: guestUser,
+      message: 'Welcome Cosmic Explorer! You are signed in as a Guest.'
+    });
+  } catch (error) {
+    console.error('Guest login error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create guest session' });
+  }
+});
+
+// Get current profile
+app.get('/api/auth/me', authMiddleware, (req, res) => {
+  const users = getUsers();
+  const user = users.find(u => u.id === req.user.id);
+  if (!user) {
+    // If guest
+    if (req.user.id.startsWith('guest-')) {
+      return res.json({
+        success: true,
+        user: { ...req.user, isGuest: true, xp: 250, level: 2, skills: ['Python', 'JavaScript'] }
+      });
+    }
+    return res.status(404).json({ success: false, message: 'User not found' });
+  }
+  res.json({ success: true, user: sanitizeUser(user) });
+});
+
+// Update profile / preferences
+app.put('/api/auth/profile', authMiddleware, (req, res) => {
+  try {
+    const users = getUsers();
+    const index = users.findIndex(u => u.id === req.user.id);
+    if (index === -1) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const { name, targetRole, skills, weeklyHours, targetMonths, xp, level } = req.body;
+    if (name) users[index].name = name;
+    if (targetRole) users[index].targetRole = targetRole;
+    if (Array.isArray(skills)) users[index].skills = skills;
+    if (weeklyHours !== undefined) users[index].weeklyHours = Number(weeklyHours);
+    if (targetMonths !== undefined) users[index].targetMonths = Number(targetMonths);
+    if (xp !== undefined) users[index].xp = Number(xp);
+    if (level !== undefined) users[index].level = Number(level);
+
+    saveUsers(users);
+    res.json({ success: true, user: sanitizeUser(users[index]), message: 'Profile updated' });
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update profile' });
+  }
+});
+
+// ================= CAREER CATALOG & ROADMAP API =================
+
 app.get('/api/careers', (req, res) => {
   res.json({
     success: true,

@@ -1,0 +1,61 @@
+[
+  {
+    "id": "user-demo-101",
+    "name": "Pranshu Gupta",
+    "email": "demo@careermitra.ai",
+    "passwordHash": "$2a$10$vI8A3bqvF9Wc1U9p2E3o9eO8G0S9tK1wL1x2y3z4a5b6c7d8e9f0a",
+    "targetRole": "ai-engineer",
+    "skills": [
+      "Python",
+      "Machine Learning",
+      "FastAPI"
+    ],
+    "weeklyHours": 15,
+    "targetMonths": 6,
+    "xp": 450,
+    "level": 3,
+    "createdAt": "2026-10-10T00:00:00.000Z"
+  },
+  {
+    "id": "user-1791613661570-gxg7en",
+    "name": "Cosmic Tester",
+    "email": "test-1791613661490@test.com",
+    "passwordHash": "$2b$10$bF/Aki4Q9zL9wre0SkgkFOFXyu5OA/4ImASM5/MVJlBssJbloRLRi",
+    "targetRole": "ai-engineer",
+    "skills": [],
+    "weeklyHours": 15,
+    "targetMonths": 6,
+    "xp": 100,
+    "level": 1,
+    "savedRoadmaps": [],
+    "createdAt": "2026-10-10T06:27:41.570Z"
+  },
+  {
+    "id": "user-1791613962637-l6vbq8",
+    "name": "Pranshu Gupta",
+    "email": "p30465217@gmail.com",
+    "passwordHash": "$2b$10$S0vPsql0TqmaEoxlSnv9I.x6D5yr7mZpsF7v37b0.KBW7wnSZMaYu",
+    "targetRole": "ai-engineer",
+    "skills": [],
+    "weeklyHours": 15,
+    "targetMonths": 6,
+    "xp": 100,
+    "level": 1,
+    "savedRoadmaps": [],
+    "createdAt": "2026-10-10T06:32:42.637Z"
+  },
+  {
+    "id": "user-1791614396632-fn71ho",
+    "name": "Cosmic Tester",
+    "email": "test-1791614396536@test.com",
+    "passwordHash": "$2b$10$ebHND2PbTH9UwADubnTCd.djK.0krjq4E7hoIdtCcoyUYcJ4M7m6S",
+    "targetRole": "ai-engineer",
+    "skills": [],
+    "weeklyHours": 15,
+    "targetMonths": 6,
+    "xp": 100,
+    "level": 1,
+    "savedRoadmaps": [],
+    "createdAt": "2026-10-10T06:39:56.632Z"
+  }
+]

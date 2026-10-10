@@ -4,9 +4,11 @@ import { Toaster } from 'react-hot-toast';
 import StarField from './components/StarField';
 import Navbar from './components/Navbar';
 import CareerGalaxy from './components/CareerGalaxy';
+import AuthModal from './components/AuthModal';
 import useStore from './store/useStore';
 
-// Lazy-load heavier views
+// Lazy-load views
+const LandingView  = lazy(() => import('./pages/LandingView'));
 const RoadmapView  = lazy(() => import('./pages/RoadmapView'));
 const CompareView  = lazy(() => import('./pages/CompareView'));
 const ProfileView  = lazy(() => import('./pages/ProfileView'));
@@ -16,12 +18,13 @@ function PageLoader() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', flexDirection: 'column', gap: 16 }}>
       <div className="spinner" />
-      <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Loading…</div>
+      <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Navigating cosmos…</div>
     </div>
   );
 }
 
 const VIEW_COMPONENTS = {
+  landing:  <Suspense fallback={<PageLoader />}><LandingView /></Suspense>,
   galaxy:   <CareerGalaxy />,
   roadmap:  <Suspense fallback={<PageLoader />}><RoadmapView /></Suspense>,
   compare:  <Suspense fallback={<PageLoader />}><CompareView /></Suspense>,
@@ -37,7 +40,7 @@ export default function App() {
       {/* Animated starfield canvas */}
       <StarField />
 
-      {/* Navigation */}
+      {/* Navigation bar */}
       <Navbar />
 
       {/* Page content with animated transitions */}
@@ -50,17 +53,20 @@ export default function App() {
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.28, ease: 'easeOut' }}
           >
-            {VIEW_COMPONENTS[activeView] || VIEW_COMPONENTS['galaxy']}
+            {VIEW_COMPONENTS[activeView] || VIEW_COMPONENTS['landing']}
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {/* Global Authentication Modal */}
+      <AuthModal />
 
       {/* Toast notifications */}
       <Toaster
         position="bottom-right"
         gutter={8}
         toastOptions={{
-          duration: 3000,
+          duration: 3200,
           style: {
             background: 'rgba(8, 6, 28, 0.95)',
             color: '#f0ecff',

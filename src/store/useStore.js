@@ -91,8 +91,119 @@ const useStore = create(
         set({ notes: { ...get().notes, [careerId]: text } });
       },
 
+      // ── Authentication & User State ──
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isGuest: false,
+      authModalOpen: false,
+      authModalMode: 'login', // 'login' | 'register'
+
+      openAuthModal: (mode = 'login') => set({ authModalOpen: true, authModalMode: mode }),
+      closeAuthModal: () => set({ authModalOpen: false }),
+
+      setAuth: (user, token) => {
+        if (token) localStorage.setItem('careermitra_token', token);
+        set({
+          user,
+          token,
+          isAuthenticated: true,
+          isGuest: Boolean(user?.isGuest),
+          authModalOpen: false,
+          activeView: get().activeView === 'landing' ? 'galaxy' : get().activeView,
+        });
+      },
+
+      login: async (email, password) => {
+        try {
+          const res = await fetch('http://localhost:3000/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          });
+          const data = await res.json();
+          if (data.success && data.token) {
+            get().setAuth(data.user, data.token);
+            return { success: true, message: data.message };
+          }
+          return { success: false, message: data.message || 'Login failed' };
+        } catch (err) {
+          // Offline fallback
+          if (email.toLowerCase().includes('demo')) {
+            const demoUser = {
+              id: 'demo-local',
+              name: 'Demo Cosmic Explorer',
+              email,
+              targetRole: 'ai-engineer',
+              skills: ['Python', 'SQL'],
+              xp: 250,
+              level: 2,
+            };
+            get().setAuth(demoUser, 'demo-token');
+            return { success: true, message: 'Welcome to offline demo mode!' };
+          }
+          return { success: false, message: 'Server unreachable. Try guest mode or start server.' };
+        }
+      },
+
+      register: async (name, email, password, targetRole = 'ai-engineer', skills = []) => {
+        try {
+          const res = await fetch('http://localhost:3000/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password, targetRole, skills }),
+          });
+          const data = await res.json();
+          if (data.success && data.token) {
+            get().setAuth(data.user, data.token);
+            return { success: true, message: data.message };
+          }
+          return { success: false, message: data.message || 'Registration failed' };
+        } catch (err) {
+          return { success: false, message: 'Server error during registration' };
+        }
+      },
+
+      loginAsGuest: async () => {
+        try {
+          const res = await fetch('http://localhost:3000/api/auth/guest', {
+            method: 'POST',
+          });
+          const data = await res.json();
+          if (data.success && data.token) {
+            get().setAuth(data.user, data.token);
+            return { success: true };
+          }
+        } catch (err) {
+          // Fallback guest session
+        }
+        const fallbackGuest = {
+          id: `guest-${Date.now()}`,
+          name: 'Cosmic Explorer (Guest)',
+          email: 'guest@careermitra.ai',
+          isGuest: true,
+          targetRole: 'ai-engineer',
+          skills: ['Python', 'JavaScript'],
+          xp: 150,
+          level: 1,
+        };
+        get().setAuth(fallbackGuest, 'guest-token');
+        return { success: true };
+      },
+
+      logout: () => {
+        localStorage.removeItem('careermitra_token');
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          isGuest: false,
+          activeView: 'landing',
+        });
+      },
+
       // ── UI State ──
-      activeView: 'galaxy',      // 'galaxy' | 'roadmap' | 'compare' | 'profile' | 'progress'
+      activeView: 'landing',      // 'landing' | 'galaxy' | 'roadmap' | 'compare' | 'profile' | 'progress'
       setActiveView: (view) => set({ activeView: view }),
 
       galaxyFilter: 'all',
@@ -115,6 +226,10 @@ const useStore = create(
     {
       name: 'careermitra-storage',
       partialState: (state) => ({
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+        isGuest: state.isGuest,
         userProfile: state.userProfile,
         progress: state.progress,
         savedRoadmaps: state.savedRoadmaps,

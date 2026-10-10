@@ -1,9 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Compass, LayoutDashboard, GitCompare, User, BookOpen, Telescope } from 'lucide-react';
+import { Compass, LayoutDashboard, GitCompare, User, BookOpen, Telescope, Sparkles, LogOut, LogIn } from 'lucide-react';
 import useStore from '../store/useStore';
 
 const NAV_ITEMS = [
+  { id: 'landing',  icon: Sparkles,       label: 'Home',     desc: 'Overview & features' },
   { id: 'galaxy',   icon: Telescope,      label: 'Galaxy',   desc: 'Explore careers' },
   { id: 'roadmap',  icon: BookOpen,       label: 'Roadmap',  desc: 'AI roadmap' },
   { id: 'progress', icon: LayoutDashboard,label: 'Progress', desc: 'Track skills' },
@@ -12,7 +13,10 @@ const NAV_ITEMS = [
 ];
 
 export default function Navbar() {
-  const { activeView, setActiveView, comparedCareers } = useStore();
+  const {
+    activeView, setActiveView, comparedCareers,
+    isAuthenticated, user, isGuest, logout, openAuthModal
+  } = useStore();
 
   return (
     <motion.nav
@@ -30,17 +34,17 @@ export default function Navbar() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        background: 'rgba(4, 3, 13, 0.7)',
+        background: 'rgba(4, 3, 13, 0.85)',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(124, 58, 237, 0.15)',
+        borderBottom: '1px solid rgba(124, 58, 237, 0.18)',
       }}
     >
       {/* Logo */}
       <motion.div
         whileHover={{ scale: 1.03 }}
         style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
-        onClick={() => setActiveView('galaxy')}
+        onClick={() => setActiveView('landing')}
       >
         <div style={{
           width: 38, height: 38,
@@ -66,7 +70,7 @@ export default function Navbar() {
             CareerMitra
           </div>
           <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', letterSpacing: '0.08em', marginTop: 2 }}>
-            NAVIGATE YOUR DESTINY
+            COSMIC CAREER NAVIGATOR
           </div>
         </div>
       </motion.div>
@@ -131,20 +135,106 @@ export default function Navbar() {
         })}
       </div>
 
-      {/* Right section */}
+      {/* Right Section: Auth & Status */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{
-          fontSize: '0.75rem',
-          color: 'var(--color-text-muted)',
-          display: 'flex', alignItems: 'center', gap: 6,
-          background: 'rgba(16,185,129,0.1)',
-          border: '1px solid rgba(16,185,129,0.2)',
-          borderRadius: 'var(--radius-full)',
-          padding: '4px 10px',
-        }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 6px #10b981' }} />
-          AI Active
-        </div>
+        {isAuthenticated ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* User chip */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '4px 10px 4px 6px',
+              borderRadius: 9999,
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(124, 58, 237, 0.3)',
+            }}>
+              <div style={{
+                width: 26,
+                height: 26,
+                borderRadius: '50%',
+                background: isGuest
+                  ? 'linear-gradient(135deg, #06b6d4, #10b981)'
+                  : 'linear-gradient(135deg, #7c3aed, #ec4899)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                color: '#fff',
+              }}>
+                {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+              </div>
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#f0ecff' }}>
+                {user?.name || (isGuest ? 'Guest' : 'User')}
+              </span>
+              {user?.level && (
+                <span style={{
+                  fontSize: '0.68rem',
+                  background: 'rgba(124, 58, 237, 0.3)',
+                  color: '#c4b5fd',
+                  padding: '2px 6px',
+                  borderRadius: 6,
+                  fontWeight: 700,
+                }}>
+                  Lvl {user.level}
+                </span>
+              )}
+            </div>
+
+            {/* Logout button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={logout}
+              className="btn btn-ghost btn-sm"
+              style={{
+                padding: '6px 10px',
+                color: 'var(--color-text-muted)',
+                borderRadius: 8,
+                fontSize: '0.78rem',
+                gap: 5,
+              }}
+              title="Sign Out"
+            >
+              <LogOut size={15} />
+              <span>Exit</span>
+            </motion.button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => openAuthModal('login')}
+              className="btn btn-ghost btn-sm"
+              style={{
+                color: '#c4b5fd',
+                fontSize: '0.84rem',
+                fontWeight: 600,
+                gap: 6,
+              }}
+            >
+              <LogIn size={15} />
+              Sign In
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.04, boxShadow: '0 0 16px rgba(124, 58, 237, 0.5)' }}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => openAuthModal('register')}
+              className="btn btn-primary btn-sm"
+              style={{
+                fontSize: '0.84rem',
+                fontWeight: 700,
+                borderRadius: 9999,
+                padding: '7px 16px',
+              }}
+            >
+              Get Started
+            </motion.button>
+          </div>
+        )}
       </div>
     </motion.nav>
   );
