@@ -23,17 +23,38 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // --- User Database Helpers ---
+const DEFAULT_DEMO_USER = {
+  id: 'user-demo-101',
+  name: 'Demo Explorer',
+  email: 'demo@careermitra.ai',
+  passwordHash: '$2b$10$v5RX8fdzbCw9CZe5plohDu3IlLZESb/tNflcFcTlUkXffYdHWhz9y',
+  targetRole: 'ai-engineer',
+  skills: ['Python', 'Machine Learning', 'FastAPI'],
+  weeklyHours: 15,
+  targetMonths: 6,
+  xp: 450,
+  level: 3,
+  savedRoadmaps: [],
+  createdAt: '2026-10-10T00:00:00.000Z'
+};
+
 function getUsers() {
   try {
     if (!fs.existsSync(USERS_FILE)) {
-      fs.writeFileSync(USERS_FILE, JSON.stringify([]), 'utf-8');
-      return [];
+      const initialUsers = [DEFAULT_DEMO_USER];
+      fs.writeFileSync(USERS_FILE, JSON.stringify(initialUsers, null, 2), 'utf-8');
+      return initialUsers;
     }
     const data = fs.readFileSync(USERS_FILE, 'utf-8');
-    return JSON.parse(data || '[]');
+    const users = JSON.parse(data || '[]');
+    if (!users.some(u => u.email === 'demo@careermitra.ai')) {
+      users.unshift(DEFAULT_DEMO_USER);
+      saveUsers(users);
+    }
+    return users;
   } catch (e) {
     console.error('Error reading users file:', e);
-    return [];
+    return [DEFAULT_DEMO_USER];
   }
 }
 
