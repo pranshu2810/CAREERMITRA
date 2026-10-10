@@ -5,6 +5,7 @@ import StarField from './components/StarField';
 import Navbar from './components/Navbar';
 import CareerGalaxy from './components/CareerGalaxy';
 import AuthModal from './components/AuthModal';
+import GamificationHUD from './components/GamificationHUD';
 import useStore from './store/useStore';
 
 // Lazy-load views
@@ -58,8 +59,9 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* Global Authentication Modal */}
+      {/* Global Authentication Modal & Gamification HUD */}
       <AuthModal />
+      <GamificationHUD />
 
       {/* Toast notifications */}
       <Toaster

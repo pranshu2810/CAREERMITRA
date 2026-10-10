@@ -1,9 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, Info, Plus, GitCompare, Sparkles, TrendingUp, X } from 'lucide-react';
+import { Search, Filter, Info, Plus, GitCompare, Sparkles, TrendingUp, X, Trash2, RotateCcw } from 'lucide-react';
 import useStore from '../store/useStore';
 import { CAREER_NODES, CAREER_EDGES, CATEGORIES, DEMAND_COLORS } from '../data/careers';
 import CareerDetailModal from './CareerDetailModal';
+import HoloCard from './HoloCard';
+import { playHoverSound, playClickSound } from '../utils/soundFX';
+import toast from 'react-hot-toast';
 
 const CANVAS_W = 1100;
 const CANVAS_H = 720;
@@ -22,11 +25,26 @@ const NODE_POS = {
   'fullstack':      { x: 420, y: 310 },
 };
 
+function getNodePosition(career, allList = []) {
+  if (NODE_POS[career.id]) return NODE_POS[career.id];
+  const customList = allList.filter((c) => !NODE_POS[c.id]);
+  const customIdx = Math.max(0, customList.indexOf(career));
+  const totalCustom = Math.max(1, customList.length);
+  const angle = (customIdx / totalCustom) * Math.PI * 1.8 + Math.PI * 0.15;
+  const rx = 440;
+  const ry = 260;
+  return {
+    x: Math.round(CANVAS_W / 2 + Math.cos(angle) * rx),
+    y: Math.round(CANVAS_H / 2 + Math.sin(angle) * ry),
+  };
+}
+
 export default function CareerGalaxy() {
   const {
     galaxyFilter, setGalaxyFilter, searchQuery, setSearchQuery,
     comparedCareers, toggleCompare, setActiveView, setSelectedCareer,
-    getAllCareers, addCustomCareer
+    getAllCareers, addCustomCareer, soundEnabled,
+    deleteCareer, deletedCareerIds, restoreDefaultCareers
   } = useStore();
   const [hoveredNode, setHoveredNode] = useState(null);
   const [detailCareer, setDetailCareer] = useState(null);
@@ -63,6 +81,21 @@ export default function CareerGalaxy() {
     setSelectedCareer(career);
     setDetailCareer(null);
     setActiveView('roadmap');
+  };
+
+  const handleDeleteCareer = (career, e) => {
+    if (e) e.stopPropagation();
+    if (!career) return;
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete "${career.title}" from your Career Galaxy? You can restore it anytime.`
+    );
+    if (!confirmDelete) return;
+
+    deleteCareer(career.id);
+    if (detailCareer?.id === career.id) {
+      setDetailCareer(null);
+    }
+    toast.success(`Deleted "${career.title}" from Career Galaxy`);
   };
 
   const handleCreateCustomCareer = (e) => {
@@ -166,6 +199,28 @@ export default function CareerGalaxy() {
             >
               <Plus size={14} /> + Add Other Career
             </motion.button>
+            {deletedCareerIds && deletedCareerIds.length > 0 && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                id="btn-restore-careers"
+                className="btn btn-sm"
+                onClick={() => {
+                  restoreDefaultCareers();
+                  toast.success('Restored all deleted career paths!');
+                }}
+                style={{
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  color: '#fca5a5',
+                  fontWeight: 600,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                }}
+                title="Restore all deleted careers"
+              >
+                <RotateCcw size={13} /> Restore Careers ({deletedCareerIds.length})
+              </motion.button>
+            )}
           </div>
         </motion.div>
 
@@ -175,9 +230,9 @@ export default function CareerGalaxy() {
           style={{ display: 'flex', gap: 24, justifyContent: 'center', marginBottom: 8 }}
         >
           {[
-            { label: 'Career Paths', value: CAREER_NODES.length },
-            { label: 'Skills Mapped', value: CAREER_NODES.reduce((a, c) => a + c.skills.length, 0) },
-            { label: 'AI Roadmap Ready', value: '10' },
+            { label: 'Career Paths', value: allCareers.length },
+            { label: 'Skills Mapped', value: allCareers.reduce((a, c) => a + (c.skills?.length || 0), 0) },
+            { label: 'AI Roadmap Ready', value: allCareers.length },
           ].map((stat) => (
             <div key={stat.label} style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-display)', background: 'var(--grad-text)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
@@ -206,11 +261,11 @@ export default function CareerGalaxy() {
             style={{ width: '100%', display: 'block' }}
           >
             <defs>
-              {CAREER_NODES.map((c) => (
+              {allCareers.map((c) => (
                 <radialGradient key={`grd-${c.id}`} id={`grd-${c.id}`} cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor={c.color} stopOpacity="0.9" />
-                  <stop offset="60%" stopColor={c.color} stopOpacity="0.4" />
-                  <stop offset="100%" stopColor={c.color} stopOpacity="0" />
+                  <stop offset="0%" stopColor={c.color || '#ec4899'} stopOpacity="0.95" />
+                  <stop offset="60%" stopColor={c.color || '#ec4899'} stopOpacity="0.4" />
+                  <stop offset="100%" stopColor={c.color || '#ec4899'} stopOpacity="0" />
                 </radialGradient>
               ))}
               <filter id="glow-blur">
@@ -255,40 +310,64 @@ export default function CareerGalaxy() {
               );
             })}
 
+            {/* Custom Career Constellation Edges */}
+            {allCareers.filter((c) => !NODE_POS[c.id]).map((c, i) => {
+              const pos = getNodePosition(c, allCareers);
+              const center = { x: CANVAS_W / 2, y: CANVAS_H / 2 };
+              const isHovered = hoveredNode === c.id;
+              return (
+                <line
+                  key={`custom-edge-${c.id}`}
+                  x1={pos.x} y1={pos.y}
+                  x2={center.x} y2={center.y}
+                  stroke={c.color || '#ec4899'}
+                  strokeWidth={isHovered ? 2 : 1}
+                  strokeOpacity={isHovered ? 0.6 : 0.22}
+                  strokeDasharray="4 5"
+                />
+              );
+            })}
+
             {/* Career Nodes */}
-            {CAREER_NODES.map((career, idx) => {
-              const pos = NODE_POS[career.id];
+            {allCareers.map((career, idx) => {
+              const pos = getNodePosition(career, allCareers);
               if (!pos) return null;
               const isFiltered = filteredIds.includes(career.id);
               const isHovered = hoveredNode === career.id;
               const isCompared = comparedCareers.includes(career.id);
               const nodeR = 44;
-              const glowR = isHovered ? 65 : 52;
+              const glowR = isHovered ? 68 : 52;
 
               return (
                 <motion.g
                   key={career.id}
                   id={`node-${career.id}`}
                   style={{ cursor: 'pointer' }}
-                  onMouseEnter={() => setHoveredNode(career.id)}
+                  onMouseEnter={() => {
+                    setHoveredNode(career.id);
+                    playHoverSound(soundEnabled);
+                  }}
                   onMouseLeave={() => setHoveredNode(null)}
-                  onClick={() => isFiltered && handleNodeClick(career)}
+                  onClick={() => {
+                    playClickSound(soundEnabled);
+                    if (isFiltered) handleNodeClick(career);
+                  }}
                   initial={{ opacity: 0, scale: 0 }}
                   animate={{ opacity: isFiltered ? 1 : 0.15, scale: 1 }}
-                  transition={{ duration: 0.5, delay: idx * 0.08, ease: [0.34, 1.56, 0.64, 1] }}
+                  transition={{ duration: 0.5, delay: idx * 0.06, ease: [0.34, 1.56, 0.64, 1] }}
                 >
                   {/* Outer glow halo */}
                   <motion.circle
                     cx={pos.x} cy={pos.y} r={glowR}
                     fill={`url(#grd-${career.id})`}
-                    animate={{ r: isHovered ? 68 : 52, opacity: isHovered ? 0.9 : 0.5 }}
+                    animate={{ r: isHovered ? 70 : 52, opacity: isHovered ? 0.95 : 0.5 }}
                     transition={{ duration: 0.3 }}
                   />
                   {/* Pulse ring */}
                   <motion.circle
                     cx={pos.x} cy={pos.y} r={nodeR + 10}
                     fill="none"
-                    stroke={career.color}
+                    stroke={career.color || '#7c3aed'}
                     strokeWidth={1}
                     strokeOpacity={0.35}
                     animate={{ r: [nodeR + 10, nodeR + 22, nodeR + 10], strokeOpacity: [0.35, 0.05, 0.35] }}
@@ -297,8 +376,8 @@ export default function CareerGalaxy() {
                   {/* Main node circle */}
                   <motion.circle
                     cx={pos.x} cy={pos.y} r={nodeR}
-                    fill={`rgba(${hexToRgb(career.color)}, 0.15)`}
-                    stroke={career.color}
+                    fill={`rgba(${hexToRgb(career.color || '#7c3aed')}, 0.16)`}
+                    stroke={career.color || '#7c3aed'}
                     strokeWidth={isHovered ? 2.5 : 1.5}
                     filter="url(#node-glow)"
                     animate={{ r: isHovered ? 50 : nodeR }}
@@ -312,13 +391,13 @@ export default function CareerGalaxy() {
                     fontSize={isHovered ? 26 : 22}
                     style={{ userSelect: 'none', transition: 'font-size 0.2s' }}
                   >
-                    {career.icon}
+                    {career.icon || '🚀'}
                   </text>
                   {/* Title label */}
                   <text
                     x={pos.x} y={pos.y + nodeR + 16}
                     textAnchor="middle"
-                    fill={isFiltered ? career.color : '#555'}
+                    fill={isFiltered ? (career.color || '#c4b5fd') : '#555'}
                     fontSize={11}
                     fontWeight={isHovered ? '700' : '500'}
                     fontFamily="var(--font-display)"
@@ -331,7 +410,7 @@ export default function CareerGalaxy() {
                     <g>
                       <rect x={pos.x - 34} y={pos.y + nodeR + 28} width={68} height={16} rx={8} fill={DEMAND_COLORS[career.demand] || '#10b981'} fillOpacity={0.2} />
                       <text x={pos.x} y={pos.y + nodeR + 40} textAnchor="middle" fill={DEMAND_COLORS[career.demand] || '#10b981'} fontSize={9} fontWeight="600">
-                        ↑ {career.demand}
+                        ↑ {career.demand || 'High'}
                       </text>
                     </g>
                   )}
@@ -345,8 +424,8 @@ export default function CareerGalaxy() {
 
             {/* Hover tooltip */}
             {hoveredNode && (() => {
-              const career = CAREER_NODES.find((c) => c.id === hoveredNode);
-              const pos = NODE_POS[hoveredNode];
+              const career = allCareers.find((c) => c.id === hoveredNode);
+              const pos = career ? getNodePosition(career, allCareers) : null;
               if (!career || !pos) return null;
               const tipX = pos.x > CANVAS_W - 200 ? pos.x - 190 : pos.x + 58;
               const tipY = Math.max(20, Math.min(pos.y - 40, CANVAS_H - 140));
@@ -355,9 +434,9 @@ export default function CareerGalaxy() {
                   <rect x={tipX - 8} y={tipY - 8} width={188} height={120} rx={10} fill="rgba(8,6,28,0.92)" stroke={career.color} strokeWidth={1} strokeOpacity={0.5} />
                   <text x={tipX} y={tipY + 10} fill={career.color} fontSize={12} fontWeight="700" fontFamily="var(--font-display)">{career.title}</text>
                   <text x={tipX} y={tipY + 28} fill="#a8a0cc" fontSize={10}>{career.category}</text>
-                  <text x={tipX} y={tipY + 48} fill="#f0ecff" fontSize={10}>💰 {career.avgSalary}</text>
-                  <text x={tipX} y={tipY + 64} fill="#f0ecff" fontSize={10}>📈 Growth: {career.growthRate}</text>
-                  <text x={tipX} y={tipY + 82} fill="#a8a0cc" fontSize={9}>{career.skills.slice(0, 3).join(' · ')}</text>
+                  <text x={tipX} y={tipY + 48} fill="#f0ecff" fontSize={10}>💰 {career.avgSalary || career.salaryRange || '$100k'}</text>
+                  <text x={tipX} y={tipY + 64} fill="#f0ecff" fontSize={10}>📈 Growth: {career.growthRate || '+20%'}</text>
+                  <text x={tipX} y={tipY + 82} fill="#a8a0cc" fontSize={9}>{(career.skills || []).slice(0, 3).join(' · ')}</text>
                   <rect x={tipX} y={tipY + 96} width={172} height={16} rx={8} fill={career.color} fillOpacity={0.2} />
                   <text x={tipX + 86} y={tipY + 108} textAnchor="middle" fill={career.color} fontSize={9} fontWeight="600">Click to explore →</text>
                 </g>
@@ -379,6 +458,7 @@ export default function CareerGalaxy() {
               onToggleCompare={() => toggleCompare(career.id)}
               onClick={() => handleNodeClick(career)}
               onRoadmap={() => handleGenerateRoadmap(career)}
+              onDelete={(c, e) => handleDeleteCareer(c || career, e)}
             />
           ))}
         </div>
@@ -393,6 +473,7 @@ export default function CareerGalaxy() {
             onGenerateRoadmap={() => handleGenerateRoadmap(detailCareer)}
             isCompared={comparedCareers.includes(detailCareer.id)}
             onToggleCompare={() => toggleCompare(detailCareer.id)}
+            onDelete={() => handleDeleteCareer(detailCareer)}
           />
         )}
       </AnimatePresence>
@@ -569,31 +650,30 @@ export default function CareerGalaxy() {
   );
 }
 
-// ── Career Card ──
-function CareerCard({ career, idx, isCompared, onToggleCompare, onClick, onRoadmap }) {
+// ── Career Card with 3D Holographic Perspective Tilt ──
+function CareerCard({ career, idx, isCompared, onToggleCompare, onClick, onRoadmap, onDelete }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: idx * 0.07 + 0.2, ease: [0.34, 1.56, 0.64, 1] }}
-      className="glass-card"
-      style={{ padding: 24, cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
+    <HoloCard
+      glowColor={career.color || '#7c3aed'}
+      onClick={onClick}
+      style={{ padding: 24 }}
     >
       {/* Color accent top bar */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${career.color}, transparent)` }} />
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${career.color || '#7c3aed'}, transparent)` }} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <div style={{
             width: 48, height: 48,
-            background: `rgba(${hexToRgb(career.color)}, 0.15)`,
-            border: `1.5px solid rgba(${hexToRgb(career.color)}, 0.35)`,
-            borderRadius: 12,
+            background: `rgba(${hexToRgb(career.color || '#7c3aed')}, 0.15)`,
+            border: `1.5px solid rgba(${hexToRgb(career.color || '#7c3aed')}, 0.35)`,
+            borderRadius: 14,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 22,
-          }}>{career.icon}</div>
+            boxShadow: `0 0 20px rgba(${hexToRgb(career.color || '#7c3aed')}, 0.25)`,
+          }}>{career.icon || '🚀'}</div>
           <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1rem', color: 'var(--color-text-primary)' }}>{career.title}</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.05rem', color: 'var(--color-text-primary)' }}>{career.title}</div>
             <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', marginTop: 2 }}>{career.category}</div>
           </div>
         </div>
@@ -607,39 +687,63 @@ function CareerCard({ career, idx, isCompared, onToggleCompare, onClick, onRoadm
           >
             <GitCompare size={13} />
           </button>
-          <button id={`info-${career.id}`} className="btn btn-ghost btn-sm" onClick={onClick} style={{ padding: '5px 8px' }}>
+          <button id={`info-${career.id}`} className="btn btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); onClick(); }} style={{ padding: '5px 8px' }}>
             <Info size={13} />
           </button>
+          {onDelete && (
+            <button
+              id={`delete-${career.id}`}
+              className="btn btn-ghost btn-sm"
+              onClick={(e) => { e.stopPropagation(); onDelete(career, e); }}
+              title={`Delete ${career.title} from galaxy`}
+              style={{
+                padding: '5px 8px',
+                color: 'rgba(244, 63, 94, 0.75)',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#f43f5e';
+                e.currentTarget.style.background = 'rgba(244, 63, 94, 0.18)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'rgba(244, 63, 94, 0.75)';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
         </div>
       </div>
 
-      <p style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', lineHeight: 1.55, marginBottom: 16 }}>{career.description}</p>
+      <p style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', lineHeight: 1.55, marginBottom: 16 }}>{career.description || career.tagline}</p>
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: '8px 12px' }}>
-          <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginBottom: 3 }}>💰 AVG SALARY</div>
-          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>{career.avgSalary}</div>
+        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '8px 12px', border: '1px solid rgba(255,255,255,0.04)' }}>
+          <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginBottom: 3, letterSpacing: '0.04em' }}>💰 AVG SALARY</div>
+          <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>{career.avgSalary || career.salaryRange || '$110k'}</div>
         </div>
-        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: '8px 12px' }}>
-          <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginBottom: 3 }}>📈 GROWTH</div>
-          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: DEMAND_COLORS[career.demand] || '#10b981' }}>{career.growthRate}</div>
+        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '8px 12px', border: '1px solid rgba(255,255,255,0.04)' }}>
+          <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginBottom: 3, letterSpacing: '0.04em' }}>📈 GROWTH</div>
+          <div style={{ fontSize: '0.88rem', fontWeight: 700, color: DEMAND_COLORS[career.demand] || '#10b981' }}>{career.growthRate || '+24%'}</div>
         </div>
       </div>
 
       {/* Skills chips */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
-        {career.skills.slice(0, 5).map((skill) => (
+        {(career.skills || []).slice(0, 5).map((skill) => (
           <span key={skill} style={{
             fontSize: '0.7rem', padding: '3px 10px',
-            background: `rgba(${hexToRgb(career.color)}, 0.1)`,
-            color: career.color, borderRadius: 'var(--radius-full)',
-            border: `1px solid rgba(${hexToRgb(career.color)}, 0.25)`,
+            background: `rgba(${hexToRgb(career.color || '#7c3aed')}, 0.1)`,
+            color: career.color || '#c4b5fd', borderRadius: 'var(--radius-full)',
+            border: `1px solid rgba(${hexToRgb(career.color || '#7c3aed')}, 0.25)`,
+            fontWeight: 500,
           }}>{skill}</span>
         ))}
-        {career.skills.length > 5 && (
+        {(career.skills || []).length > 5 && (
           <span style={{ fontSize: '0.7rem', padding: '3px 10px', background: 'rgba(255,255,255,0.05)', color: 'var(--color-text-muted)', borderRadius: 'var(--radius-full)' }}>
-            +{career.skills.length - 5}
+            +{(career.skills || []).length - 5}
           </span>
         )}
       </div>
@@ -648,11 +752,15 @@ function CareerCard({ career, idx, isCompared, onToggleCompare, onClick, onRoadm
         id={`roadmap-${career.id}`}
         className="btn btn-primary"
         onClick={(e) => { e.stopPropagation(); onRoadmap(); }}
-        style={{ width: '100%', justifyContent: 'center' }}
+        style={{
+          width: '100%',
+          justifyContent: 'center',
+          boxShadow: `0 4px 20px ${career.color || '#7c3aed'}35`,
+        }}
       >
         <Sparkles size={15} /> Generate AI Roadmap
       </button>
-    </motion.div>
+    </HoloCard>
   );
 }
 

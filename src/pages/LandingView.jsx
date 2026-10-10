@@ -9,7 +9,7 @@ import useStore from '../store/useStore';
 import { CAREER_NODES } from '../data/careers';
 
 export default function LandingView() {
-  const { openAuthModal, loginAsGuest, setActiveView, isAuthenticated, user } = useStore();
+  const { openAuthModal, loginAsGuest, setActiveView, isAuthenticated, user, getAllCareers } = useStore();
 
   const handleLaunchApp = async () => {
     if (isAuthenticated) {
@@ -20,7 +20,7 @@ export default function LandingView() {
     }
   };
 
-  const featuredCareers = CAREER_NODES.slice(0, 4);
+  const featuredCareers = (getAllCareers ? getAllCareers() : CAREER_NODES).slice(0, 4);
 
   return (
     <div style={{ position: 'relative', overflowX: 'hidden', paddingTop: 90, paddingBottom: 80 }}>

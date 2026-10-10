@@ -1,7 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Compass, LayoutDashboard, GitCompare, User, BookOpen, Telescope, Sparkles, LogOut, LogIn } from 'lucide-react';
+import {
+  Compass, LayoutDashboard, GitCompare, User, BookOpen, Telescope,
+  Sparkles, LogOut, LogIn, Volume2, VolumeX, Flame, Award, Zap
+} from 'lucide-react';
 import useStore from '../store/useStore';
+import { playClickSound, playWarpSound } from '../utils/soundFX';
 
 const NAV_ITEMS = [
   { id: 'landing',  icon: Sparkles,       label: 'Home',     desc: 'Overview & features' },
@@ -15,7 +19,8 @@ const NAV_ITEMS = [
 export default function Navbar() {
   const {
     activeView, setActiveView, comparedCareers,
-    isAuthenticated, user, isGuest, logout, openAuthModal
+    isAuthenticated, user, isGuest, logout, openAuthModal,
+    soundEnabled, toggleSound, triggerWarp, streakDays, setShowBadgesModal
   } = useStore();
 
   return (
@@ -135,8 +140,90 @@ export default function Navbar() {
         })}
       </div>
 
-      {/* Right Section: Auth & Status */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      {/* Right Section: Controls, Gamification & Auth */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {/* Cosmic Audio SFX Toggle */}
+        <motion.button
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.92 }}
+          onClick={() => {
+            toggleSound();
+            if (!soundEnabled) playClickSound(true);
+          }}
+          className="btn btn-ghost btn-sm"
+          style={{
+            padding: '6px 10px',
+            borderRadius: 9999,
+            border: '1px solid rgba(124, 58, 237, 0.25)',
+            gap: 5,
+          }}
+          title={soundEnabled ? 'Mute Cosmic Audio FX' : 'Enable Cosmic Audio FX'}
+        >
+          {soundEnabled ? (
+            <>
+              <Volume2 size={15} color="#22d3ee" />
+              <span style={{ display: 'inline-flex', gap: 2, alignItems: 'flex-end', height: 12 }}>
+                <span style={{ width: 2, height: 8, background: '#22d3ee', borderRadius: 1 }} />
+                <span style={{ width: 2, height: 12, background: '#a855f7', borderRadius: 1 }} />
+                <span style={{ width: 2, height: 6, background: '#22d3ee', borderRadius: 1 }} />
+              </span>
+            </>
+          ) : (
+            <VolumeX size={15} color="#f43f5e" />
+          )}
+        </motion.button>
+
+        {/* Warp Drive Button */}
+        <motion.button
+          whileHover={{ scale: 1.08, boxShadow: '0 0 16px rgba(6,182,212,0.6)' }}
+          whileTap={{ scale: 0.92 }}
+          onClick={() => {
+            playWarpSound(soundEnabled);
+            triggerWarp(750);
+          }}
+          className="btn btn-ghost btn-sm"
+          style={{
+            padding: '6px 12px',
+            borderRadius: 9999,
+            border: '1px solid rgba(6,182,212,0.35)',
+            color: '#67e8f9',
+            gap: 5,
+            fontSize: '0.76rem',
+            fontWeight: 700,
+          }}
+          title="Engage Hyperspace Warp Drive"
+        >
+          <Zap size={13} color="#22d3ee" />
+          <span>Warp</span>
+        </motion.button>
+
+        {/* Gamified Level & Badges Button */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowBadgesModal(true)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 7,
+            padding: '5px 12px',
+            borderRadius: 9999,
+            background: 'linear-gradient(135deg, rgba(124,58,237,0.2) 0%, rgba(6,182,212,0.15) 100%)',
+            border: '1px solid rgba(124,58,237,0.4)',
+            cursor: 'pointer',
+            color: '#fff',
+          }}
+          title="Open Cosmic Achievements Codex"
+        >
+          <Award size={15} color="#fbbf24" />
+          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#f0ecff' }}>
+            Lvl {user?.level || 1}
+          </span>
+          <span style={{ fontSize: '0.72rem', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Flame size={12} color="#f97316" /> {streakDays}d
+          </span>
+        </motion.button>
+
         {isAuthenticated ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {/* User chip */}
@@ -168,18 +255,6 @@ export default function Navbar() {
               <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#f0ecff' }}>
                 {user?.name || (isGuest ? 'Guest' : 'User')}
               </span>
-              {user?.level && (
-                <span style={{
-                  fontSize: '0.68rem',
-                  background: 'rgba(124, 58, 237, 0.3)',
-                  color: '#c4b5fd',
-                  padding: '2px 6px',
-                  borderRadius: 6,
-                  fontWeight: 700,
-                }}>
-                  Lvl {user.level}
-                </span>
-              )}
             </div>
 
             {/* Logout button */}

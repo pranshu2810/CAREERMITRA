@@ -99,5 +99,61 @@
     "level": 1,
     "savedRoadmaps": [],
     "createdAt": "2026-10-10T07:20:10.147Z"
+  },
+  {
+    "id": "user-1791619384018-qc4jvm",
+    "name": "Alex",
+    "email": "prince@gmail.com",
+    "passwordHash": "$2b$10$kGCNI1iaURziIfTvJO.3V.Y26UpWridn1Vk7vjklysCJ9MAVyOIeK",
+    "targetRole": "custom-1791619383775",
+    "skills": [],
+    "weeklyHours": 15,
+    "targetMonths": 6,
+    "xp": 100,
+    "level": 1,
+    "savedRoadmaps": [],
+    "createdAt": "2026-10-10T08:03:04.018Z"
+  },
+  {
+    "id": "user-1791621110596-i5g3et",
+    "name": "Cosmic Tester",
+    "email": "test-1791621110504@test.com",
+    "passwordHash": "$2b$10$ghn6TksKCBS5CS4eUe2llOffBXOsn7upYvsDoFKIWJ7qiGt0mpd8W",
+    "targetRole": "ai-engineer",
+    "skills": [],
+    "weeklyHours": 15,
+    "targetMonths": 6,
+    "xp": 100,
+    "level": 1,
+    "savedRoadmaps": [],
+    "createdAt": "2026-10-10T08:31:50.596Z"
+  },
+  {
+    "id": "user-1791621861779-uoveso",
+    "name": "Cosmic Tester",
+    "email": "test-1791621861500@test.com",
+    "passwordHash": "$2b$10$BHXKO6Cdo/DiCeRl7MOSl.1FU25PrPa6tChR.U4i36lm.UA5plRj6",
+    "targetRole": "ai-engineer",
+    "skills": [],
+    "weeklyHours": 15,
+    "targetMonths": 6,
+    "xp": 100,
+    "level": 1,
+    "savedRoadmaps": [],
+    "createdAt": "2026-10-10T08:44:21.779Z"
+  },
+  {
+    "id": "user-1791622822047-om2qgd",
+    "name": "Cosmic Tester",
+    "email": "test-1791622821788@test.com",
+    "passwordHash": "$2b$10$nu56rmf9M0B6cRbRErerDegSCh95IndyTq5Aeymz16W.2/FnjkKDK",
+    "targetRole": "ai-engineer",
+    "skills": [],
+    "weeklyHours": 15,
+    "targetMonths": 6,
+    "xp": 100,
+    "level": 1,
+    "savedRoadmaps": [],
+    "createdAt": "2026-10-10T09:00:22.047Z"
   }
 ]

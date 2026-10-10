@@ -33,9 +33,10 @@ function parseSalaryMidpoint(salaryStr) {
 }
 
 export default function CompareView() {
-  const { comparedCareers, toggleCompare, clearCompare, setSelectedCareer, setActiveView } = useStore();
+  const { comparedCareers, toggleCompare, clearCompare, setSelectedCareer, setActiveView, getAllCareers } = useStore();
 
-  const careers = comparedCareers.map((id) => CAREER_NODES.find((c) => c.id === id)).filter(Boolean);
+  const allCareers = getAllCareers();
+  const careers = comparedCareers.map((id) => allCareers.find((c) => c.id === id)).filter(Boolean);
 
   if (careers.length === 0) {
     return (

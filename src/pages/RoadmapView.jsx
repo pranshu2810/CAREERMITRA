@@ -4,13 +4,20 @@ import {
   Sparkles, RefreshCw, Download, Share2, Save, Clock, Target,
   CheckCircle2, Circle, ChevronDown, ChevronRight, AlertCircle,
   RotateCcw, ExternalLink, TrendingUp, Zap, BookOpen, Calendar,
-  Edit3, Plus, Trash2
+  Edit3, Plus, Trash2, Trophy, Rocket, Award, ShieldCheck, Layers
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { generateRoadmap, replanRoadmap } from '../utils/roadmapAPI';
 import { CAREER_NODES } from '../data/careers';
 import toast from 'react-hot-toast';
 import { exportRoadmapPDF } from '../utils/exportUtils';
+import confetti from 'canvas-confetti';
+import { playTaskCompleteSound, playClickSound, playLevelUpSound } from '../utils/soundFX';
+import HoloCard from '../components/HoloCard';
+import ProjectPortalModal from '../components/ProjectPortalModal';
+import AssessmentQuizModal from '../components/AssessmentQuizModal';
+import { generatePhaseAssessment, generateReadinessAssessment } from '../utils/assessmentGenerator';
+import { getCareerProjects } from '../utils/domainProjects';
 
 export default function RoadmapView() {
   const {
@@ -20,6 +27,9 @@ export default function RoadmapView() {
     notes, setNote, getAllCareers,
     addPhaseToRoadmap, removePhaseFromRoadmap,
     addTaskToRoadmapPhase, removeTaskFromRoadmapPhase,
+    soundEnabled,
+    deleteCareer, setActiveView, restoreDefaultCareers,
+    phaseAssessments, readinessAssessments, projectProgress,
   } = useStore();
 
   const [expandedPhase, setExpandedPhase] = useState(0);
@@ -31,9 +41,22 @@ export default function RoadmapView() {
   const [newPhaseTitle, setNewPhaseTitle] = useState('');
   const [newPhaseDesc, setNewPhaseDesc] = useState('');
   const [taskInputs, setTaskInputs] = useState({}); // { [phaseIdx]: { title: '', hours: 15 } }
+  const [activeAssessment, setActiveAssessment] = useState(null);
+  const [selectedProject, setSelectedProject] = useState(null);
 
   const allCareers = getAllCareers();
   const career = selectedCareer || (activeRoadmap ? allCareers.find((c) => c.id === activeRoadmap.careerId) : null) || allCareers[0];
+  const careerProjects = getCareerProjects(career);
+
+  const handleStartPhaseAssessment = (phaseIdx, phaseData) => {
+    const assess = generatePhaseAssessment(career, phaseIdx, phaseData);
+    setActiveAssessment(assess);
+  };
+
+  const handleStartReadinessAssessment = () => {
+    const assess = generateReadinessAssessment(career);
+    setActiveAssessment(assess);
+  };
 
   useEffect(() => {
     if (career && notes[career.id]) setLocalNote(notes[career.id]);
@@ -65,6 +88,21 @@ export default function RoadmapView() {
       toast.error('Generation failed. Please retry.');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleToggleTask = (careerId, phaseIdx, taskIdx, taskTitle, isCurrentlyDone) => {
+    toggleTask(careerId, phaseIdx, taskIdx, taskTitle);
+    if (!isCurrentlyDone) {
+      playTaskCompleteSound(soundEnabled);
+      confetti({
+        particleCount: 45,
+        spread: 65,
+        origin: { y: 0.75 },
+        colors: ['#7c3aed', '#06b6d4', '#ec4899', '#f59e0b', '#10b981'],
+      });
+    } else {
+      playClickSound(soundEnabled);
     }
   };
 
@@ -143,6 +181,15 @@ export default function RoadmapView() {
     if (career) setNote(career.id, localNote);
   };
 
+  const handleDeleteCareer = () => {
+    if (!career) return;
+    const confirmed = window.confirm(`Are you sure you want to delete "${career.title}" from your Career Galaxy? You can restore default careers anytime.`);
+    if (!confirmed) return;
+    deleteCareer(career.id);
+    toast.success(`Deleted "${career.title}" from Career Galaxy`);
+    setActiveView('galaxy');
+  };
+
   // ── No career selected ──
   if (!career) {
     return (
@@ -152,11 +199,22 @@ export default function RoadmapView() {
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 800, marginBottom: 12 }}>No Career Selected</h2>
           <p style={{ color: 'var(--color-text-secondary)', marginBottom: 24 }}>Visit the Galaxy view, click a career node, and generate your personalized AI roadmap.</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {CAREER_NODES.slice(0, 4).map((c) => (
+            {allCareers.slice(0, 4).map((c) => (
               <button key={c.id} className="btn btn-ghost" onClick={() => useStore.getState().setSelectedCareer(c)} style={{ justifyContent: 'flex-start', gap: 12 }}>
                 <span style={{ fontSize: 20 }}>{c.icon}</span> {c.title}
               </button>
             ))}
+            {allCareers.length === 0 && (
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  restoreDefaultCareers();
+                  toast.success('Restored all career paths!');
+                }}
+              >
+                <RotateCcw size={14} style={{ marginRight: 6 }} /> Restore Default Careers
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -213,6 +271,15 @@ export default function RoadmapView() {
               </button>
               <button id="roadmap-share" className="btn btn-accent btn-sm" onClick={handleShare}>
                 <Share2 size={14} /> Share
+              </button>
+              <button
+                id="roadmap-delete-career"
+                className="btn btn-ghost btn-sm"
+                onClick={handleDeleteCareer}
+                title="Delete this career from your galaxy"
+                style={{ color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+              >
+                <Trash2 size={14} /> Delete
               </button>
             </div>
           </div>
@@ -389,7 +456,7 @@ export default function RoadmapView() {
                             >
                               <div
                                 style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', flex: 1 }}
-                                onClick={() => toggleTask(career.id, pIdx, tIdx, taskTitle)}
+                                onClick={() => handleToggleTask(career.id, pIdx, tIdx, taskTitle, isDone)}
                               >
                                 {isDone
                                   ? <CheckCircle2 size={16} color="#10b981" />
@@ -623,18 +690,18 @@ export default function RoadmapView() {
                                     initial={{ opacity: 0, x: -10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: taskIdx * 0.04 }}
-                                    onClick={() => toggleTask(career.id, phaseIdx, taskIdx, taskObj.title || taskObj)}
+                                    onClick={() => handleToggleTask(career.id, phaseIdx, taskIdx, taskObj.title || taskObj, isDone)}
                                     style={{
                                       display: 'flex', gap: 12, alignItems: 'center',
                                       padding: '10px 14px',
-                                      background: isDone ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.02)',
-                                      border: `1px solid ${isDone ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.05)'}`,
+                                      background: isDone ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.02)',
+                                      border: `1px solid ${isDone ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.05)'}`,
                                       borderRadius: 10,
                                       cursor: 'pointer',
                                       transition: 'all 0.2s',
                                     }}
                                     onMouseEnter={(e) => { if (!isDone) e.currentTarget.style.background = 'rgba(124,58,237,0.06)'; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.background = isDone ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.02)'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = isDone ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.02)'; }}
                                   >
                                     {isDone
                                       ? <CheckCircle2 size={18} color="#10b981" style={{ flexShrink: 0 }} />
@@ -649,6 +716,18 @@ export default function RoadmapView() {
                                       }}>{taskObj.title || taskObj}</span>
                                     </div>
                                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                                      <span
+                                        style={{
+                                          fontSize: '0.66rem',
+                                          fontWeight: 700,
+                                          padding: '2px 6px',
+                                          borderRadius: 4,
+                                          background: isDone ? 'rgba(16,185,129,0.2)' : 'rgba(124,58,237,0.2)',
+                                          color: isDone ? '#34d399' : '#c4b5fd',
+                                        }}
+                                      >
+                                        +50 XP
+                                      </span>
                                       {taskObj.priority && (
                                         <span className={`badge ${taskObj.priority === 'review' ? 'badge-gold' : 'badge-primary'}`} style={{ fontSize: '0.65rem' }}>
                                           {taskObj.priority}
@@ -662,6 +741,93 @@ export default function RoadmapView() {
                                 );
                               })}
                             </div>
+
+                            {/* Phase Gamified Skill Assessment CTA */}
+                            {(() => {
+                              const phaseAssessmentData = phaseAssessments?.[career.id]?.[phaseIdx];
+                              const isPassed = phaseAssessmentData?.passed;
+                              return (
+                                <div
+                                  style={{
+                                    marginTop: 18,
+                                    padding: '16px 20px',
+                                    borderRadius: 14,
+                                    background: isPassed
+                                      ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%)'
+                                      : 'linear-gradient(135deg, rgba(124, 58, 237, 0.16) 0%, rgba(236, 72, 153, 0.1) 100%)',
+                                    border: isPassed
+                                      ? '1px solid rgba(16, 185, 129, 0.35)'
+                                      : '1px solid rgba(124, 58, 237, 0.4)',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    flexWrap: 'wrap',
+                                    gap: 12,
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                    <div
+                                      style={{
+                                        width: 44,
+                                        height: 44,
+                                        borderRadius: 12,
+                                        background: isPassed ? 'rgba(16, 185, 129, 0.2)' : 'rgba(124, 58, 237, 0.25)',
+                                        border: `1.5px solid ${isPassed ? '#10b981' : '#7c3aed'}`,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: 22,
+                                      }}
+                                    >
+                                      {isPassed ? '🏆' : '⚡'}
+                                    </div>
+                                    <div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                                        <span style={{ fontWeight: 800, fontSize: '0.96rem', color: '#fff' }}>
+                                          Phase {phaseIdx + 1} Assessment (30 MCQs)
+                                        </span>
+                                        {isPassed ? (
+                                          <span className="badge" style={{ background: 'rgba(16,185,129,0.2)', color: '#34d399', fontSize: '0.72rem' }}>
+                                            Passed · {phaseAssessmentData.percentage}% Score ✓
+                                          </span>
+                                        ) : phaseAssessmentData ? (
+                                          <span className="badge" style={{ background: 'rgba(239,68,68,0.2)', color: '#fca5a5', fontSize: '0.72rem' }}>
+                                            Retake Recommended · {phaseAssessmentData.percentage}%
+                                          </span>
+                                        ) : (
+                                          <span className="badge badge-primary" style={{ fontSize: '0.7rem' }}>
+                                            +150 XP
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                                        {isPassed
+                                          ? `Validated competency for ${phase.phase || phase.title}. Retake anytime to improve mastery.`
+                                          : `Gamified 30-question interactive challenge with streaks, hints & +150 XP reward.`}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleStartPhaseAssessment(phaseIdx, phase);
+                                    }}
+                                    className={`btn btn-sm ${isPassed ? 'btn-ghost' : 'btn-primary'}`}
+                                    style={{
+                                      padding: '8px 20px',
+                                      fontWeight: 700,
+                                      gap: 6,
+                                      border: isPassed ? '1px solid rgba(16, 185, 129, 0.4)' : undefined,
+                                      color: isPassed ? '#34d399' : undefined,
+                                    }}
+                                  >
+                                    <Sparkles size={14} />
+                                    {isPassed ? 'Review / Retake (30 Questions)' : 'Start Phase Assessment (30 MCQs) 🚀'}
+                                  </button>
+                                </div>
+                              );
+                            })()}
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -670,6 +836,157 @@ export default function RoadmapView() {
                 })}
               </div>
             )}
+
+            {/* ================= MAJOR FINAL CAREER READINESS ASSESSMENT ================= */}
+            <motion.div
+              className="glass-card"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                padding: '28px 32px',
+                marginBottom: 32,
+                background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.16) 0%, rgba(124, 58, 237, 0.2) 50%, rgba(6, 182, 212, 0.12) 100%)',
+                border: '1.5px solid rgba(236, 72, 153, 0.45)',
+                borderRadius: 22,
+                boxShadow: '0 15px 50px rgba(0, 0, 0, 0.5), 0 0 35px rgba(236, 72, 153, 0.25)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+                  <div style={{
+                    width: 60, height: 60, borderRadius: 18,
+                    background: 'linear-gradient(135deg, #ec4899, #7c3aed)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 30, boxShadow: '0 0 25px rgba(236, 72, 153, 0.5)',
+                    flexShrink: 0,
+                  }}>
+                    🌌
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+                      <span className="badge" style={{ background: 'rgba(236, 72, 153, 0.3)', color: '#fbcfe8', fontWeight: 800 }}>
+                        FINAL ROADMAP CAPSTONE EVALUATION
+                      </span>
+                      {readinessAssessments?.[career.id]?.passed && (
+                        <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.25)', color: '#34d399', fontWeight: 800 }}>
+                          ✓ Certified Ready ({readinessAssessments[career.id].percentage}%)
+                        </span>
+                      )}
+                    </div>
+                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 900, color: '#fff', margin: 0 }}>
+                      Major Career Readiness Assessment · {career.title}
+                    </h3>
+                    <p style={{ fontSize: '0.84rem', color: 'var(--color-text-secondary)', margin: '4px 0 0', maxWidth: 640 }}>
+                      Comprehensive 30-question interactive exam testing system architecture, real-world incident debugging, and domain trade-offs. Evaluates your hiring readiness and generates an official certification.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleStartReadinessAssessment}
+                  className="btn btn-primary btn-lg"
+                  style={{
+                    background: 'linear-gradient(135deg, #ec4899, #7c3aed)',
+                    boxShadow: '0 0 30px rgba(236, 72, 153, 0.45)',
+                    padding: '12px 28px',
+                    fontWeight: 800,
+                    gap: 8,
+                  }}
+                >
+                  <Trophy size={18} />
+                  {readinessAssessments?.[career.id]?.passed
+                    ? 'Review Readiness Exam / Certificate'
+                    : 'Launch Major Career Readiness Exam (30 MCQs) 🚀'}
+                </button>
+              </div>
+            </motion.div>
+
+            {/* ================= 5 INDUSTRY PORTFOLIO PROJECTS (CAPSTONES) ================= */}
+            <div style={{ marginBottom: 36 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span className="badge badge-primary">
+                      <Rocket size={11} style={{ marginRight: 4 }} /> INDUSTRY PORTFOLIO ACCELERATOR
+                    </span>
+                    <span className="badge" style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--color-text-secondary)' }}>
+                      5 Domain Capstones
+                    </span>
+                  </div>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.45rem', fontWeight: 900, color: '#fff', margin: 0 }}>
+                    🚀 Industry Portfolio Projects (5 Capstones)
+                  </h3>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
+                    Real-world projects aligned to the {career.title} role. Click any project card to open the interactive Project Portal with requirements, architecture, milestones, and resume bullet points.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 18 }}>
+                {careerProjects.map((proj, pIdx) => {
+                  const pData = projectProgress?.[career.id]?.[proj.id] || {};
+                  const isDone = pData.completed;
+                  const doneMilestones = pData.completedMilestones?.length || 0;
+                  return (
+                    <HoloCard
+                      key={proj.id}
+                      glowColor={pIdx % 2 === 0 ? '#7c3aed' : '#ec4899'}
+                      onClick={() => setSelectedProject(proj)}
+                      style={{ padding: 22, cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                          <span
+                            className="badge"
+                            style={{
+                              fontSize: '0.7rem',
+                              background: proj.difficulty === 'Production Capstone' ? 'rgba(236,72,153,0.18)' : 'rgba(124,58,237,0.18)',
+                              color: proj.difficulty === 'Production Capstone' ? '#f472b6' : '#c4b5fd',
+                              border: `1px solid ${proj.difficulty === 'Production Capstone' ? 'rgba(236,72,153,0.4)' : 'rgba(124,58,237,0.4)'}`,
+                            }}
+                          >
+                            {proj.difficulty}
+                          </span>
+                          {isDone ? (
+                            <span className="badge" style={{ background: 'rgba(16,185,129,0.2)', color: '#34d399', fontSize: '0.7rem' }}>
+                              ✓ Completed
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+                              {doneMilestones}/{proj.milestones?.length || 5} milestones
+                            </span>
+                          )}
+                        </div>
+
+                        <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', fontWeight: 800, color: '#fff', marginBottom: 8, lineHeight: 1.3 }}>
+                          {proj.title}
+                        </h4>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginBottom: 14 }}>
+                          {proj.tagline || proj.summary}
+                        </p>
+
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+                          {proj.techStack?.slice(0, 3).map((tech) => (
+                            <span key={tech} style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', color: '#cbd5e1', border: '1px solid rgba(255,255,255,0.06)' }}>
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <Clock size={12} /> {proj.estHours}
+                        </span>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-glow)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          Open Portal <ChevronRight size={14} />
+                        </span>
+                      </div>
+                    </HoloCard>
+                  );
+                })}
+              </div>
+            </div>
 
             {/* Weekly Plan */}
             {activeRoadmap.weeklyPlan && (
@@ -739,6 +1056,27 @@ export default function RoadmapView() {
           </motion.div>
         )}
       </div>
+
+      {/* Gamified Assessment Quiz Modal (30 MCQs) */}
+      <AnimatePresence>
+        {activeAssessment && (
+          <AssessmentQuizModal
+            assessment={activeAssessment}
+            onClose={() => setActiveAssessment(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Interactive Project Portal Modal */}
+      <AnimatePresence>
+        {selectedProject && (
+          <ProjectPortalModal
+            project={selectedProject}
+            career={career}
+            onClose={() => setSelectedProject(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

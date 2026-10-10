@@ -12,7 +12,8 @@ const COMMON_SKILLS = [
 ];
 
 export default function ProfileView() {
-  const { userProfile, setUserProfile, setActiveView, savedRoadmaps, deleteSavedRoadmap, setSelectedCareer, setActiveRoadmap } = useStore();
+  const { userProfile, setUserProfile, setActiveView, savedRoadmaps, deleteSavedRoadmap, setSelectedCareer, setActiveRoadmap, getAllCareers } = useStore();
+  const allCareers = getAllCareers();
 
   const [form, setForm] = useState({
     name: userProfile?.name || '',
@@ -49,7 +50,7 @@ export default function ProfileView() {
   };
 
   const loadSavedRoadmap = (roadmap) => {
-    const career = CAREER_NODES.find((c) => c.id === roadmap.careerId);
+    const career = allCareers.find((c) => c.id === roadmap.careerId);
     if (career) {
       setSelectedCareer(career);
       setActiveRoadmap(roadmap);
@@ -117,7 +118,7 @@ export default function ProfileView() {
                   <label htmlFor="profile-goal" style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 8 }}>Target Career</label>
                   <select id="profile-goal" className="form-input" value={form.goalCareer} onChange={(e) => update('goalCareer', e.target.value)}>
                     <option value="">Select a career goal…</option>
-                    {CAREER_NODES.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.title}</option>)}
+                    {allCareers.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.title}</option>)}
                   </select>
                 </div>
                 <div>

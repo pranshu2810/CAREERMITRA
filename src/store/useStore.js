@@ -56,7 +56,33 @@ const useStore = create(
         set({ customCareers: updated, selectedCareer: newCareer });
         return newCareer;
       },
-      getAllCareers: () => [...CAREER_NODES, ...(get().customCareers || [])],
+      deletedCareerIds: [],
+      deleteCareer: (careerId) => {
+        const { customCareers, deletedCareerIds, selectedCareer, comparedCareers, activeRoadmap } = get();
+        const updatedCustom = (customCareers || []).filter((c) => c.id !== careerId);
+        const updatedDeleted = Array.from(new Set([...(deletedCareerIds || []), careerId]));
+        
+        const allRemaining = [...CAREER_NODES, ...updatedCustom].filter((c) => !updatedDeleted.includes(c.id));
+        const newSelected = selectedCareer?.id === careerId ? (allRemaining[0] || null) : selectedCareer;
+        const newCompared = (comparedCareers || []).filter((id) => id !== careerId);
+        const newActiveRoadmap = activeRoadmap?.careerId === careerId ? null : activeRoadmap;
+
+        set({
+          customCareers: updatedCustom,
+          deletedCareerIds: updatedDeleted,
+          selectedCareer: newSelected,
+          comparedCareers: newCompared,
+          activeRoadmap: newActiveRoadmap,
+        });
+      },
+      restoreDefaultCareers: () => {
+        set({ deletedCareerIds: [] });
+      },
+      getAllCareers: () => {
+        const { customCareers, deletedCareerIds } = get();
+        const deletedSet = new Set(deletedCareerIds || []);
+        return [...CAREER_NODES, ...(customCareers || [])].filter((c) => !deletedSet.has(c.id));
+      },
 
       // ── Active Roadmap ──
       activeRoadmap: null,       // { careerId, generatedAt, phases, aiSummary, isManual }
@@ -106,8 +132,29 @@ const useStore = create(
       progress: {},
       activityHistory: [], // Real timestamps of completed milestones [{ careerId, phaseIndex, taskIndex, taskTitle, timestamp }]
 
+      // ── Gamification, Badges & Audio ──
+      soundEnabled: true,
+      toggleSound: () => set((s) => ({ soundEnabled: !s.soundEnabled })),
+      warpActive: false,
+      triggerWarp: (duration = 600) => {
+        set({ warpActive: true });
+        setTimeout(() => set({ warpActive: false }), duration);
+      },
+      streakDays: 4,
+      badges: ['first_milestone', 'explorer', 'ai_oracle'],
+      unlockBadge: (badgeId) => {
+        const { badges } = get();
+        if (!badges.includes(badgeId)) {
+          set({ badges: [...badges, badgeId] });
+        }
+      },
+      showBadgesModal: false,
+      setShowBadgesModal: (v) => set({ showBadgesModal: v }),
+      recentXPGain: null,
+      clearRecentXPGain: () => set({ recentXPGain: null }),
+
       toggleTask: (careerId, phaseIndex, taskIndex, taskTitle = 'Milestone') => {
-        const { progress, activityHistory, user } = get();
+        const { progress, activityHistory, user, badges, unlockBadge } = get();
         const careerProgress = progress[careerId] || {};
         const phaseProgress = careerProgress[phaseIndex] || {};
         const current = phaseProgress[taskIndex] || false;
@@ -146,8 +193,16 @@ const useStore = create(
           }, 0);
         }, 0);
 
-        const newXP = totalCompletedAcrossAll * 50;
+        const newXP = Math.max(100, totalCompletedAcrossAll * 50);
         const newLevel = Math.floor(newXP / 200) + 1;
+
+        let newBadges = [...badges];
+        if (nextState && !newBadges.includes('first_milestone')) {
+          newBadges.push('first_milestone');
+        }
+        if (totalCompletedAcrossAll >= 5 && !newBadges.includes('speed_of_light')) {
+          newBadges.push('speed_of_light');
+        }
 
         set({
           progress: {
@@ -161,7 +216,115 @@ const useStore = create(
             },
           },
           activityHistory: updatedHistory,
-          user: user ? { ...user, xp: newXP, level: newLevel } : user,
+          user: user ? { ...user, xp: newXP, level: newLevel } : { id: 'local', xp: newXP, level: newLevel },
+          badges: newBadges,
+          recentXPGain: nextState ? { amount: 50, reason: taskTitle || 'Milestone Completed', id: Date.now() } : null,
+        });
+      },
+
+      awardXP: (amount = 50, reason = 'Achievement Unlocked') => {
+        const { user } = get();
+        const currentXP = user?.xp || 100;
+        const newXP = currentXP + amount;
+        const newLevel = Math.floor(newXP / 200) + 1;
+        set({
+          user: user ? { ...user, xp: newXP, level: newLevel } : { id: 'local', xp: newXP, level: newLevel },
+          recentXPGain: { amount, reason, id: Date.now() },
+        });
+      },
+
+      // ── Gamified Assessments State ──
+      // { [careerId]: { [phaseIdx]: { score, total, percentage, passed, date } } }
+      phaseAssessments: {},
+      savePhaseAssessment: (careerId, phaseIdx, assessmentData) => {
+        const { phaseAssessments, unlockBadge, awardXP } = get();
+        const careerAssessments = phaseAssessments[careerId] || {};
+        const updated = {
+          ...phaseAssessments,
+          [careerId]: {
+            ...careerAssessments,
+            [phaseIdx]: {
+              ...assessmentData,
+              completedAt: new Date().toISOString(),
+            },
+          },
+        };
+        const passed = assessmentData.percentage >= 70;
+        const xpAward = passed ? 150 : 50;
+        awardXP(xpAward, `Phase ${Number(phaseIdx) + 1} Assessment (${assessmentData.percentage}%)`);
+        if (assessmentData.percentage >= 80) {
+          unlockBadge('quiz_master');
+        }
+        set({ phaseAssessments: updated });
+      },
+
+      // { [careerId]: { score, total, percentage, passed, verdict, report, date } }
+      readinessAssessments: {},
+      saveReadinessAssessment: (careerId, assessmentData) => {
+        const { readinessAssessments, unlockBadge, awardXP } = get();
+        const updated = {
+          ...readinessAssessments,
+          [careerId]: {
+            ...assessmentData,
+            completedAt: new Date().toISOString(),
+          },
+        };
+        const passed = assessmentData.percentage >= 70;
+        const xpAward = passed ? 300 : 100;
+        awardXP(xpAward, `Career Readiness Assessment (${assessmentData.percentage}%) 🚀`);
+        if (assessmentData.percentage >= 70) {
+          unlockBadge('career_ready');
+        }
+        set({ readinessAssessments: updated });
+      },
+
+      // ── Industry Portfolio Projects Tracking ──
+      // { [careerId]: { [projectId]: { started: boolean, completed: boolean, completedMilestones: number[] } } }
+      projectProgress: {},
+      toggleProjectMilestone: (careerId, projectId, milestoneIdx) => {
+        const { projectProgress, awardXP } = get();
+        const cp = projectProgress[careerId] || {};
+        const proj = cp[projectId] || { started: true, completed: false, completedMilestones: [] };
+        const milestones = proj.completedMilestones || [];
+        const exists = milestones.includes(milestoneIdx);
+        const updatedMilestones = exists ? milestones.filter((m) => m !== milestoneIdx) : [...milestones, milestoneIdx];
+        if (!exists) {
+          awardXP(30, 'Project Milestone Complete 🛠️');
+        }
+        set({
+          projectProgress: {
+            ...projectProgress,
+            [careerId]: {
+              ...cp,
+              [projectId]: {
+                ...proj,
+                started: true,
+                completedMilestones: updatedMilestones,
+              },
+            },
+          },
+        });
+      },
+      setProjectStatus: (careerId, projectId, isCompleted) => {
+        const { projectProgress, awardXP, unlockBadge } = get();
+        const cp = projectProgress[careerId] || {};
+        const proj = cp[projectId] || { started: true, completed: false, completedMilestones: [] };
+        if (isCompleted && !proj.completed) {
+          awardXP(120, 'Industry Portfolio Project Finished! 🏆');
+          unlockBadge('project_builder');
+        }
+        set({
+          projectProgress: {
+            ...projectProgress,
+            [careerId]: {
+              ...cp,
+              [projectId]: {
+                ...proj,
+                started: true,
+                completed: isCompleted,
+              },
+            },
+          },
         });
       },
 
@@ -326,7 +489,13 @@ const useStore = create(
 
       // ── UI State ──
       activeView: 'landing',      // 'landing' | 'galaxy' | 'roadmap' | 'compare' | 'profile' | 'progress'
-      setActiveView: (view) => set({ activeView: view }),
+      setActiveView: (view) => {
+        const current = get().activeView;
+        if (current !== view) {
+          get().triggerWarp(600);
+        }
+        set({ activeView: view });
+      },
 
       galaxyFilter: 'all',
       setGalaxyFilter: (filter) => set({ galaxyFilter: filter }),
@@ -353,6 +522,7 @@ const useStore = create(
         isAuthenticated: state.isAuthenticated,
         isGuest: state.isGuest,
         customCareers: state.customCareers,
+        deletedCareerIds: state.deletedCareerIds,
         activityHistory: state.activityHistory,
         userProfile: state.userProfile,
         progress: state.progress,
@@ -360,6 +530,12 @@ const useStore = create(
         notes: state.notes,
         comparedCareers: state.comparedCareers,
         activeView: state.activeView,
+        soundEnabled: state.soundEnabled,
+        badges: state.badges,
+        streakDays: state.streakDays,
+        phaseAssessments: state.phaseAssessments,
+        readinessAssessments: state.readinessAssessments,
+        projectProgress: state.projectProgress,
       }),
     }
   )

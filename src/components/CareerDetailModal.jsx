@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { X, ExternalLink, Sparkles, GitCompare, TrendingUp, Clock, Star, Award } from 'lucide-react';
+import { X, ExternalLink, Sparkles, GitCompare, TrendingUp, Clock, Star, Award, Trash2 } from 'lucide-react';
 import { DEMAND_COLORS } from '../data/careers';
 
-export default function CareerDetailModal({ career, onClose, onGenerateRoadmap, isCompared, onToggleCompare }) {
+export default function CareerDetailModal({ career, onClose, onGenerateRoadmap, isCompared, onToggleCompare, onDelete }) {
   if (!career) return null;
 
   return (
@@ -48,7 +48,7 @@ export default function CareerDetailModal({ career, onClose, onGenerateRoadmap, 
                 </div>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <button
                 id={`modal-compare-${career.id}`}
                 className={`btn btn-sm ${isCompared ? 'btn-primary' : 'btn-ghost'}`}
@@ -56,6 +56,21 @@ export default function CareerDetailModal({ career, onClose, onGenerateRoadmap, 
               >
                 <GitCompare size={14} /> {isCompared ? 'Comparing' : 'Compare'}
               </button>
+              {onDelete && (
+                <button
+                  id={`modal-delete-${career.id}`}
+                  className="btn btn-sm btn-ghost"
+                  onClick={onDelete}
+                  title={`Delete ${career.title}`}
+                  style={{
+                    color: 'rgba(244, 63, 94, 0.85)',
+                    border: '1px solid rgba(244, 63, 94, 0.3)',
+                    padding: '6px 10px',
+                  }}
+                >
+                  <Trash2 size={14} /> Delete
+                </button>
+              )}
               <button id="modal-close" className="btn btn-ghost btn-sm" onClick={onClose} style={{ padding: '6px 8px' }}>
                 <X size={16} />
               </button>
