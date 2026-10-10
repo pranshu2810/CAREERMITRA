@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CareerMitra - Cosmic AI Career Navigator & Interactive Roadmap</title>
+  <meta name="description" content="Explore career constellations, generate AI-powered learning roadmaps, replan dynamically based on your existing skills, and track your engineering mastery.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%20%220%22%20%22100%22%20%22100%22><text y=%22.9em%22 font-size=%2290%22>🌌</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/galaxy.css">
+  <link rel="stylesheet" href="css/roadmap.css">
+  <link rel="stylesheet" href="css/modal.css">
+</head>
+<body>
+
+  <!-- Top Cosmic Navigation Header -->
+  <header class="cosmic-header">
+    <div class="brand-wrapper" id="brandNav">
+      <div class="brand-logo-cosmic">🌌</div>
+      <div class="brand-text-block">
+        <div class="brand-title">
+          CareerMitra
+          <span class="brand-badge">Cosmic AI</span>
+        </div>
+        <div class="brand-subtitle">AI Career Navigator & Dynamic Replanner</div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-cosmic-tabs">
+      <button class="nav-tab-btn active" id="tabGalaxy" data-target="galaxyView">
+        <span>🌌</span> Career Galaxy
+      </button>
+      <button class="nav-tab-btn" id="tabRoadmap" data-target="roadmapView">
+        <span>🧭</span> AI Roadmap
+      </button>
+      <button class="nav-tab-btn" id="tabCompare" data-target="compareModal">
+        <span>⚖️</span> Compare
+      </button>
+      <button class="nav-tab-btn" id="tabMissions" data-target="missionModal">
+        <span>🏆</span> Mission Log
+      </button>
+    </nav>
+
+    <!-- Header Actions -->
+    <div class="header-actions">
+      <div class="xp-pill" id="xpPill" title="Your Career Experience Points">
+        <span>⭐</span>
+        <span id="headerXpDisplay">0 XP</span>
+        <span class="level-badge" id="headerLevelDisplay">LVL 1</span>
+      </div>
+
+      <button class="btn-icon" id="btnOpenSettings" title="AI Configuration & API Key">
+        <span>⚙️</span>
+      </button>
+
+      <button class="btn-cosmic-glow" id="btnLaunchNew">
+        <span>✨</span> Generate Path
+      </button>
+    </div>
+  </header>
+
+  <!-- Main View 1: Career Galaxy (Cosmic Solar Systems & Nodes) -->
+  <main class="view-container active" id="galaxyView">
+    <div class="galaxy-viewport" id="galaxyViewport">
+      <canvas id="galaxyCanvas"></canvas>
+
+      <!-- Top Galaxy HUD -->
+      <div class="galaxy-hud-top">
+        <div class="galaxy-search-bar">
+          <span>🔍</span>
+          <input type="text" id="galaxySearchInput" placeholder="Search cosmic roles (e.g. AI Engineer, Full-Stack, Security, Cloud)...">
+        </div>
+
+        <div class="cluster-pills-row" id="clusterFilterRow">
+          <button class="cluster-pill-btn active" data-cluster="all">🌟 All Systems</button>
+          <button class="cluster-pill-btn" data-cluster="ai-data">🌌 AI & Data</button>
+          <button class="cluster-pill-btn" data-cluster="fullstack">⚡ Full-Stack</button>
+          <button class="cluster-pill-btn" data-cluster="cloud-devops">☁️ Cloud & Platform</button>
+          <button class="cluster-pill-btn" data-cluster="cybersecurity">🛡️ Cybersecurity</button>
+          <button class="cluster-pill-btn" data-cluster="product-design">🎨 Product & UX</button>
+          <button class="cluster-pill-btn" data-cluster="fintech-web3">💎 FinTech & Web3</button>
+        </div>
+      </div>
+
+      <!-- Bottom Galaxy HUD -->
+      <div class="galaxy-hud-bottom">
+        <div class="galaxy-telemetry-badge">
+          <div class="telemetry-item">
+            <span class="telemetry-dot"></span>
+            <span>SYSTEMS ONLINE</span>
+          </div>
+          <div class="telemetry-item">
+            <span>SECTORS: 6 CLUSTERS</span>
+          </div>
+          <div class="telemetry-item">
+            <span id="galaxyRoleCountBadge">ROLES: 6 ORBITS</span>
+          </div>
+        </div>
+
+        <div class="galaxy-camera-controls">
+          <button class="btn-icon" id="btnZoomIn" title="Zoom In">+</button>
+          <button class="btn-icon" id="btnZoomOut" title="Zoom Out">-</button>
+          <button class="btn-icon" id="btnResetView" title="Center Galaxy">🎯</button>
+        </div>
+      </div>
+
+      <!-- Hover Telemetry Card -->
+      <div class="node-hover-card" id="hoverCard">
+        <div class="hover-card-header">
+          <div class="hover-card-icon" id="hoverIcon">🧠</div>
+          <div>
+            <div class="hover-card-title" id="hoverTitle">AI & ML Engineer</div>
+            <div class="hover-card-cluster" id="hoverCluster">AI & Data Science</div>
+          </div>
+        </div>
+        <div class="hover-card-stats">
+          <div class="hover-stat-item">
+            <span class="hover-stat-label">Salary Range</span>
+            <span class="hover-stat-value" id="hoverSalary">$130k - $210k</span>
+          </div>
+          <div class="hover-stat-item">
+            <span class="hover-stat-label">Market Demand</span>
+            <span class="hover-stat-value" id="hoverDemand">Extremely High</span>
+          </div>
+        </div>
+        <div class="hover-card-footer">
+          <span>Click node to inspect roadmap</span>
+          <span>➔</span>
+        </div>
+      </div>
+
+      <!-- Role Quick-Inspector Drawer -->
+      <aside class="role-preview-drawer" id="rolePreviewDrawer">
+        <div class="preview-drawer-header">
+          <div>
+            <span class="brand-badge" id="drawerClusterTag">AI & Data Science</span>
+            <h2 style="font-size: 22px; font-weight: 800; color: #fff; margin-top: 6px;" id="drawerRoleTitle">Role Title</h2>
+          </div>
+          <button class="btn-icon" id="btnClosePreview">✕</button>
+        </div>
+
+        <div class="preview-drawer-body">
+          <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5;" id="drawerTagline">Role Tagline</p>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="glass-panel" style="padding: 12px;">
+              <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase;">Est. Salary</div>
+              <div style="font-size: 15px; font-weight: 700; color: #34d399;" id="drawerSalary">$130k - $210k</div>
+            </div>
+            <div class="glass-panel" style="padding: 12px;">
+              <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase;">Growth Rate</div>
+              <div style="font-size: 15px; font-weight: 700; color: #38bdf8;" id="drawerGrowth">+38%</div>
+            </div>
+            <div class="glass-panel" style="padding: 12px;">
+              <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase;">Difficulty</div>
+              <div style="font-size: 15px; font-weight: 700; color: #f59e0b;" id="drawerDifficulty">Advanced</div>
+            </div>
+            <div class="glass-panel" style="padding: 12px;">
+              <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase;">Timeline</div>
+              <div style="font-size: 15px; font-weight: 700; color: #c084fc;" id="drawerMonths">~7 Months</div>
+            </div>
+          </div>
+
+          <div class="glass-panel" style="padding: 16px;">
+            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px;">Key Competencies</div>
+            <div id="drawerSkillsPreviewList" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+          </div>
+        </div>
+
+        <div class="preview-drawer-footer">
+          <button class="btn-cosmic-glow" style="flex: 1; justify-content: center;" id="btnLaunchRoadmapFromDrawer">
+            <span>🚀</span> Launch AI Roadmap
+          </button>
+          <button class="btn-icon" id="btnCompareFromDrawer" title="Compare with another role">
+            <span>⚖️</span>
+          </button>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Main View 2: AI Roadmap Graph & Interactive Path -->
+  <section class="view-container" id="roadmapView">
+    <div class="roadmap-view">
+      
+      <!-- Roadmap Mission Control HUD -->
+      <div class="roadmap-hud-bar">
+        <div class="roadmap-role-info">
+          <div class="roadmap-role-icon" id="hudRoleIcon">🧠</div>
+          <div class="roadmap-role-meta">
+            <h1 id="hudRoleTitle">
+              AI & Machine Learning Engineer
+              <span class="brand-badge" id="hudSourceBadge">Synthesis Engine</span>
+            </h1>
+            <p id="hudRoleTagline">Build neural architectures, fine-tune LLMs, and deploy production ML systems.</p>
+          </div>
+        </div>
+
+        <div class="roadmap-metrics-chips">
+          <div class="progress-ring-box">
+            <svg class="progress-circle-svg" width="44" height="44">
+              <circle class="progress-circle-bg" stroke-width="4" fill="transparent" r="18" cx="22" cy="22"/>
+              <circle class="progress-circle-fill" id="hudProgressFill" stroke-width="4" fill="transparent" r="18" cx="22" cy="22" stroke-dasharray="113.097" stroke-dashoffset="113.097"/>
+            </svg>
+            <div class="metric-chip">
+              <span class="metric-chip-label">Readiness</span>
+              <span class="metric-chip-value" id="hudProgressValue">0%</span>
+            </div>
+          </div>
+
+          <div class="metric-chip">
+            <span class="metric-chip-label">Hours Left</span>
+            <span class="metric-chip-value" id="hudHoursLeft">120h</span>
+          </div>
+
+          <div class="metric-chip">
+            <span class="metric-chip-label">Est. Completion</span>
+            <span class="metric-chip-value" id="hudEstDate">--</span>
+          </div>
+
+          <div class="metric-chip">
+            <span class="metric-chip-label">Earned XP</span>
+            <span class="metric-chip-value" style="color: #fbbf24;" id="hudEarnedXp">+0 XP</span>
+          </div>
+        </div>
+
+        <div class="roadmap-hud-actions">
+          <button class="btn-cosmic-glow" id="btnDynamicReplan" title="Recalculate path based on completed or exempt skills">
+            <span>⚡</span> Dynamic Replan
+          </button>
+          <button class="btn-icon" id="btnExportShare" title="Export or Share Roadmap">
+            <span>📤</span>
+          </button>
+          <button class="btn-icon" id="btnBackToGalaxy" title="Back to Galaxy">
+            <span>🌌</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter Toolbar -->
+      <div class="roadmap-filter-toolbar">
+        <div class="filter-pill-group" id="roadmapStatusFilters">
+          <button class="rf-pill active" data-filter="all">All Skills</button>
+          <button class="rf-pill" data-filter="available">🔓 Unlocked / Available</button>
+          <button class="rf-pill" data-filter="completed">✅ Mastered</button>
+          <button class="rf-pill" data-filter="exempt">⏭️ Exempt / Prior Knowledge</button>
+          <button class="rf-pill" data-filter="locked">🔒 Locked</button>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px; color: var(--text-muted); font-size: 12px;">
+          <span>💡 Click any skill card to open learning resources, quiz & project challenge</span>
+        </div>
+      </div>
+
+      <!-- Dynamic Replanner Notification Bar (Appears when changes are made) -->
+      <div id="replannerAlertBar" style="display: none; padding: 12px 32px; background: rgba(139, 92, 246, 0.15); border-bottom: 1px solid rgba(139, 92, 246, 0.3); align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #e2e8f0;">
+          <span>⚡</span>
+          <span><strong>Dynamic Replan Suggestion:</strong> Your skill changes have unlocked new path efficiencies. Click Replan to recalculate your timeline.</span>
+        </div>
+        <button class="btn-replan-mini" id="btnTriggerReplannerBanner">Replan Now</button>
+      </div>
+
+      <!-- Roadmap DAG Graph & Swimlanes Content -->
+      <div class="roadmap-content-area" id="roadmapPhasesContainer">
+        <!-- Rendered dynamically by roadmap.js -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide-Out Actionable Skill Drawer -->
+  <aside class="skill-drawer" id="skillDrawer">
+    <div class="drawer-header">
+      <div>
+        <span class="brand-badge" id="drawerSkillPhaseBadge">Phase 1: Foundations</span>
+        <h2 class="drawer-meta-title" id="drawerSkillTitle">Skill Title</h2>
+        <div class="drawer-meta-sub" id="drawerSkillMeta">Est: 25h • Level: Foundational</div>
+      </div>
+      <button class="btn-icon" id="btnCloseSkillDrawer">✕</button>
+    </div>
+
+    <!-- Status Action Controller -->
+    <div class="status-action-row">
+      <div class="status-label">Your Mastery Status</div>
+      <div class="status-button-group">
+        <button class="btn-status-toggle" id="btnStatusNotStarted" data-status="not_started">
+          <span>⭕</span> Not Started
+        </button>
+        <button class="btn-status-toggle" id="btnStatusInProgress" data-status="in_progress">
+          <span>⏳</span> Learning
+        </button>
+        <button class="btn-status-toggle" id="btnStatusMastered" data-status="completed">
+          <span>✅</span> Mastered
+        </button>
+        <button class="btn-status-toggle" id="btnStatusExempt" data-status="exempt">
+          <span>⏭️</span> Already Know
+        </button>
+      </div>
+    </div>
+
+    <!-- Replanner Banner in Drawer -->
+    <div style="padding: 14px 28px;">
+      <div class="replanner-banner">
+        <div class="replanner-text">
+          <h4>Already know this skill?</h4>
+          <p>Mark as "Already Know" and recalculate your path to skip prerequisite hours.</p>
+        </div>
+        <button class="btn-replan-mini" id="btnDrawerQuickReplan">Replan Path</button>
+      </div>
+    </div>
+
+    <!-- Drawer Tabs -->
+    <div class="drawer-tabs-row">
+      <button class="drawer-tab-btn active" data-tab="overview">Overview & Docs</button>
+      <button class="drawer-tab-btn" data-tab="project">Capstone Project</button>
+      <button class="drawer-tab-btn" data-tab="quiz">Knowledge Check</button>
+    </div>
+
+    <!-- Tab 1: Overview & Curated Resources -->
+    <div class="drawer-content-pane" id="paneOverview">
+      <div>
+        <h4 style="font-size: 13px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px;">Competency Overview</h4>
+        <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6;" id="drawerSkillDesc">Skill description</p>
+      </div>
+
+      <div>
+        <h4 style="font-size: 13px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 12px;">Curated Free Resources & Labs</h4>
+        <div style="display: flex; flex-direction: column; gap: 10px;" id="drawerResourcesList">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Project Challenge -->
+    <div class="drawer-content-pane" id="paneProject" style="display: none;">
+      <div class="project-challenge-box">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+          <span>🛠️</span>
+          <span class="project-challenge-title" id="drawerProjectTitle">Project Title</span>
+        </div>
+        <p class="project-challenge-brief" id="drawerProjectBrief">Project brief</p>
+
+        <h4 style="font-size: 12px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px;">Deliverables & Acceptance Criteria:</h4>
+        <ul class="deliverables-checklist" id="drawerDeliverablesList">
+          <!-- Populated by JS -->
+        </ul>
+      </div>
+    </div>
+
+    <!-- Tab 3: Knowledge Check Quiz -->
+    <div class="drawer-content-pane" id="paneQuiz" style="display: none;">
+      <div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+          <h4 style="font-size: 13px; text-transform: uppercase; color: var(--text-dim);">Verify Your Understanding</h4>
+          <span style="font-size: 12px; color: #a78bfa; font-weight: 700;">+50 XP for Passing</span>
+        </div>
+        <div class="quiz-container" id="drawerQuizContainer">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Career Comparison Modal -->
+  <div class="modal-overlay" id="compareModal">
+    <div class="modal-box" style="max-width: 860px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>⚖️</span> Career Comparison Matrix
+        </div>
+        <button class="btn-icon modal-close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="comparison-select-row">
+          <div>
+            <label style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 700; display: block; margin-bottom: 6px;">Career Path A</label>
+            <select class="comparison-select" id="selectCareerA"></select>
+          </div>
+          <div class="comparison-vs-badge">VS</div>
+          <div>
+            <label style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 700; display: block; margin-bottom: 6px;">Career Path B</label>
+            <select class="comparison-select" id="selectCareerB"></select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div class="glass-panel" style="padding: 16px;">
+            <h4 style="font-size: 12px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 12px; text-align: center;">Competency Radar Analysis</h4>
+            <div class="comparison-radar-container">
+              <canvas id="radarCanvas" width="300" height="280"></canvas>
+            </div>
+          </div>
+
+          <div class="glass-panel" style="padding: 16px; display: flex; flex-direction: column; justify-content: center;">
+            <table class="comparison-metrics-table">
+              <thead>
+                <tr>
+                  <th>Dimension</th>
+                  <th id="compHeaderA">Role A</th>
+                  <th id="compHeaderB">Role B</th>
+                </tr>
+              </thead>
+              <tbody id="compMetricsTableBody">
+                <!-- Populated by comparison.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Overlap & Venn breakdown -->
+        <div class="skills-venn-section">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <h4 style="font-size: 12px; text-transform: uppercase; color: var(--text-dim);">Skill Convergence & Transferability</h4>
+            <span class="brand-badge" id="overlapPercentageBadge">0% Overlap</span>
+          </div>
+
+          <div>
+            <div style="font-size: 11px; color: #a78bfa; margin-bottom: 6px; font-weight: 700;">🤝 Shared Core Competencies:</div>
+            <div class="skills-venn-row" id="vennSharedPills"></div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 6px;">
+            <div>
+              <div style="font-size: 11px; color: #93c5fd; margin-bottom: 6px; font-weight: 700;" id="vennLabelA">Unique to Path A:</div>
+              <div class="skills-venn-row" id="vennUniqueAPills"></div>
+            </div>
+            <div>
+              <div style="font-size: 11px; color: #6ee7b7; margin-bottom: 6px; font-weight: 700;" id="vennLabelB">Unique to Path B:</div>
+              <div class="skills-venn-row" id="vennUniqueBPills"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cosmic-glow modal-close">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generate AI Roadmap Modal -->
+  <div class="modal-overlay" id="generateModal">
+    <div class="modal-box" style="max-width: 640px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>✨</span> Generate Custom AI Roadmap
+        </div>
+        <button class="btn-icon modal-close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 6px;">Select Role or Type Custom Dream Title</label>
+          <input type="text" id="genRoleInput" class="comparison-select" placeholder="e.g. AI & Machine Learning Engineer or Quantitative Developer">
+        </div>
+
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 6px;">What skills do you already know? (Comma-separated)</label>
+          <input type="text" id="genSkillsInput" class="comparison-select" placeholder="e.g. Python, SQL, Git, Linux">
+          <span style="font-size: 11px; color: var(--text-dim); margin-top: 4px; display: block;">We will automatically exempt matched foundational nodes and save you weeks of study!</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 6px;">Target Timeline (Months)</label>
+            <select class="comparison-select" id="genTimelineSelect">
+              <option value="3">3 Months (Intensive Sprint)</option>
+              <option value="6" selected>6 Months (Balanced Pace)</option>
+              <option value="9">9 Months (Comprehensive)</option>
+              <option value="12">12 Months (Deep Mastery)</option>
+            </select>
+          </div>
+
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 6px;">Study Time (Hours / Week)</label>
+            <select class="comparison-select" id="genHoursSelect">
+              <option value="10">10 hrs/week (Part-time)</option>
+              <option value="15" selected>15 hrs/week (Standard)</option>
+              <option value="25">25 hrs/week (Dedicated)</option>
+              <option value="40">40 hrs/week (Full-time Bootcamp)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-icon modal-close" style="width: auto; padding: 0 16px;">Cancel</button>
+        <button class="btn-cosmic-glow" id="btnSubmitGenerate">
+          <span>🚀</span> Synthesize Roadmap
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings / Gemini API Key Modal -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-box" style="max-width: 580px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>⚙️</span> CareerMitra AI Settings
+        </div>
+        <button class="btn-icon modal-close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="glass-panel" style="padding: 16px; border-color: rgba(6, 182, 212, 0.3);">
+          <div style="font-size: 13px; color: #38bdf8; font-weight: 700; margin-bottom: 4px;">🚀 Built-in AI Synthesis Engine is Active</div>
+          <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.5;">CareerMitra includes an offline generative curriculum synthesizer with production-grade engineering blueprints right out of the box.</p>
+        </div>
+
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 6px;">Google Gemini API Key (Optional)</label>
+          <input type="password" id="geminiApiKeyInput" class="comparison-select" placeholder="AIzaSy...">
+          <span style="font-size: 11px; color: var(--text-dim); margin-top: 4px; display: block;">Enter your key if you want direct real-time Gemini LLM calls for custom novel career titles. Key is saved locally in your browser.</span>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-icon" id="btnClearStorage" style="width: auto; padding: 0 14px; font-size: 12px; color: #f87171;">
+            Reset All Progress Data
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cosmic-glow" id="btnSaveSettings">Save Preferences</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mission Log & Badges Modal -->
+  <div class="modal-overlay" id="missionModal">
+    <div class="modal-box" style="max-width: 740px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>🏆</span> Mission Log & Cosmic Achievements
+        </div>
+        <button class="btn-icon modal-close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="glass-panel" style="padding: 20px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b, #ec4899); display: flex; align-items: center; justify-content: center; font-size: 26px;">
+              🎖️
+            </div>
+            <div>
+              <h3 style="font-size: 18px; font-weight: 800; color: #fff;" id="missionLevelTitle">Level 1: Starlight Cadet</h3>
+              <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;" id="missionXpSummary">0 XP Earned • 0 Skills Mastered</p>
+            </div>
+          </div>
+          <div class="brand-badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border-color: rgba(245, 158, 11, 0.4);" id="missionRankBadge">CADET</div>
+        </div>
+
+        <div>
+          <h4 style="font-size: 13px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 14px;">Cosmic Badges & Milestones</h4>
+          <div class="badges-grid" id="badgesContainer">
+            <!-- Rendered by persistence.js -->
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cosmic-glow modal-close">Back to Orbit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export & Share Modal -->
+  <div class="modal-overlay" id="exportModal">
+    <div class="modal-box" style="max-width: 620px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>📤</span> Export & Share Roadmap
+        </div>
+        <button class="btn-icon modal-close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="glass-panel" style="padding: 18px; text-align: center; cursor: pointer;" id="btnExportMarkdown">
+            <div style="font-size: 28px; margin-bottom: 8px;">📝</div>
+            <div style="font-size: 14px; font-weight: 700; color: #fff;">Markdown (.md)</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Formatted study guide for Obsidian, Notion or GitHub</div>
+          </div>
+
+          <div class="glass-panel" style="padding: 18px; text-align: center; cursor: pointer;" id="btnExportJson">
+            <div style="font-size: 28px; margin-bottom: 8px;">💾</div>
+            <div style="font-size: 14px; font-weight: 700; color: #fff;">JSON State (.json)</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Full structured curriculum data backup</div>
+          </div>
+
+          <div class="glass-panel" style="padding: 18px; text-align: center; cursor: pointer;" id="btnCopyShareUrl">
+            <div style="font-size: 28px; margin-bottom: 8px;">🔗</div>
+            <div style="font-size: 14px; font-weight: 700; color: #fff;">Shareable Link</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Encoded roadmap URL to share with peers</div>
+          </div>
+
+          <div class="glass-panel" style="padding: 18px; text-align: center; cursor: pointer;" id="btnPrintRoadmap">
+            <div style="font-size: 28px; margin-bottom: 8px;">🖨️</div>
+            <div style="font-size: 14px; font-weight: 700; color: #fff;">Print / Save as PDF</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Clean printable study syllabus</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cosmic-glow modal-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer"></div>
+
+  <!-- Client-side Logic Scripts (Modular ES6) -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
